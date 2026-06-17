@@ -1,98 +1,170 @@
-# dotfiles — AI設定の正本リポジトリ
+# dotfiles — 設定の正本リポジトリ
 
-複数端末（私用・業務）で、AIエージェント設定（AGENTS.md / Skills / commands 等）を
-正本一元管理し、symlinkで各ツールへ配置し、Gitで端末間同期する。
+複数端末（私用・業務、Mac・Windows）で、各種ツール設定を正本一元管理する。
+symlinkで各ツールへ配置し、Gitで端末間同期する。
 
 ## 設計原則
 
 - **正本は1箇所**：`~/dotfiles` 配下の実体ファイル。各ツールの設定パスはsymlinkで参照する。
+- **カテゴリ分類**：設定はカテゴリ別ディレクトリに分ける（ai-agent/, editor/, shell/ 等）。命名は単数形で統一。
+- **2層管理**：設定ファイルはファイル監視で自動sync。インフラ（スクリプト・hook）は手動管理。
 - **同期はGit**：commit/push/pull で端末間に伝播。履歴・差分が残るので「育てる」用途に向く。
-- **コンフリクトは自動mergeしない**：hookは `pull --ff-only` で、分岐を検知したら**止めて警告**する。
-  勝手にmergeして正本を汚さない。
+- **conflict は退避**：分岐を検知したら conflict branch に退避し、main をリモートに合わせる。手動で resolve する。
+- **commit message は自動生成**：diff から変更内容を要約。何をしたかが履歴に残る。
 - **シークレットは同期しない**：APIキー・トークン・`auth.json` 類はdotfilesに入れない（§セキュリティ）。
-- **育成対象を分離**：AGENTS.mdは手動キュレーション（少数精鋭）。自動で溜めたいログ・手順はSkills/notes側へ。
 
 ## ディレクトリ構成
 
 ```
 ~/dotfiles/
-├── ai/
-│   ├── AGENTS.md                 # グローバル個人ルール（正本・手動編集）
-│   ├── ai-setup-local.md         # リポジトリ用 生成器の元本
-│   ├── skills/                   # 育てたSkill群（正本）
-│   │   └── <skill-name>/
-│   │       └── SKILL.md
-│   └── commands/                 # カスタムスラッシュコマンド等
-├── install/
-│   ├── link.sh                   # symlink配置（OS分岐）
-│   └── setup-hooks.sh            # Git hook 設置
-├── hooks/
-│   ├── post-merge               # pull後にsymlink再張り直し
-│   └── pre-push                 # 未解決コンフリクト等を検知してpushを止める
-├── .gitattributes               # symlinkを実体展開させない設定
+├── .infra/                      # インフラ（隠しディレクトリ）
+│   ├── sync.sh                  # pull / push サブコマンド
+│   ├── link.sh                  # symlink配置エンジン（link.yamlを読む）
+│   ├── setup.sh                 # 初期セットアップ
+│   └── hook/
+│       ├── post-merge           # pull後にsymlink再配置
+│       └── pre-push             # シークレット検知
+├── ai-agent/                    # AI設定（auto-sync対象）
+│   ├── AGENTS.md                # グローバル個人ルール
+│   ├── ai-setup-local.md        # リポジトリ用 生成器の元本
+│   ├── skills/                  # 育てたSkill群
+│   ├── commands/                # カスタムスラッシュコマンド等
+│   └── link.yaml                # symlink定義
+├── editor/                      # エディタ設定（将来拡張）
+│   └── link.yaml
+├── shell/                       # シェル設定（将来拡張）
+│   └── link.yaml
 └── README.md
 ```
 
-## 配置されるsymlink（link.sh が張る）
+- **設定カテゴリ**（ai-agent/, editor/, shell/）：各カテゴリに `link.yaml` を置き、symlinkの配置先を宣言する。
+- **インフラ**（.infra/）：sync・link・hookを集約。設定カテゴリとは視覚的に分離。
 
-| 正本（実体） | リンク先（各ツールが読む場所） |
-|---|---|
-| `~/dotfiles/ai/AGENTS.md` | `~/.codex/AGENTS.md` |
-| `~/dotfiles/ai/AGENTS.md` | `~/.claude/CLAUDE.md` |
-| `~/dotfiles/ai/skills/` | `~/.agents/skills/`（中身を個別リンク） |
-| `~/dotfiles/ai/commands/` | `~/.claude/commands/` |
+## symlink管理：link.yaml
 
-> import方式をやめてsymlinkに統一。Codexがimport記法を解釈しない可能性を回避でき、
-> ツールから見れば常に「実体ファイルがそこにある」状態になる。
+各カテゴリの `link.yaml` で、OS別にsymlinkの配置先を宣言する。
+OS別完全リスト方式：各OSセクションにそのOSの全エントリを書く（共通セクションは使わない）。
 
-## 初期セットアップ手順（新端末）
+```yaml
+# ai-agent/link.yaml
+darwin:
+  AGENTS.md:
+    - ~/.codex/AGENTS.md
+    - ~/.claude/CLAUDE.md
+  commands/:
+    - ~/.claude/commands/
+  skills/:
+    - ~/.agents/skills/
 
-```bash
-git clone git@github.com:<you>/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-bash install/link.sh        # symlinkを配置（既存ファイルはバックアップ）
-bash install/setup-hooks.sh # Git hookを設置
+win32:
+  AGENTS.md:
+    - ~/.codex/AGENTS.md
+    - ~/.claude/CLAUDE.md
+  commands/:
+    - ~/.claude/commands/
+  skills/:
+    - ~/.agents/skills/
 ```
 
-これだけで、その端末の全AIツールが正本を参照する状態になる。
+`.infra/link.sh` がOSを判定し、該当セクションのエントリを処理する。
+新しいカテゴリを追加するときは、ディレクトリを作って `link.yaml` を置くだけ。
+
+## ブランチ戦略
+
+| ブランチ | 用途 | 管理 |
+| --- | --- | --- |
+| **main** | 正本。auto-sync対象。常にリモートと一致させる | 自動 |
+| **develop** | インフラ改修・ファイル整理の作業用 | 手動。完了後mainにmerge |
+| **conflict/{hostname}/{YYYYMMDD-HHMMSS}** | 分岐検知時の自動退避先 | 自動作成。手動resolve後に削除 |
+
+- 普段使うのは **main のみ**。設定ファイルの自動syncはすべてmainに対して行われる。
+- **develop** は大きめの構造変更や `.infra/` の改修時に使う。auto-syncは走らないので安全に作業できる。
+- **conflict branch** は分岐検知時に自動で作られる。ローカルの変更を退避し、mainはリモートに合わせる。
+
+## 同期フロー
+
+### push（自動 — ファイル監視）
+
+auto-sync対象カテゴリ（現在は ai-agent/ のみ）のファイル保存を監視し、自動でcommit/pushする。
+
+```
+ファイル保存を検知
+→ debounce（数秒待って連続保存をまとめる）
+→ git add <対象カテゴリ>/
+→ commit message を diff から自動生成
+→ git commit
+→ git push origin main
+```
+
+- 他のカテゴリ（editor/, shell/）は将来opt-in可能な設計。
+- インフラ（.infra/, README）は自動syncの対象外。手動でcommit/pushする。
+
+### pull（セッション開始時）
+
+シェル起動時（.bashrc/.zshrc）をベースに、各ツールのhookからも同じスクリプトを呼べる（冪等）。
+
+```
+git fetch origin
+├─ ff-only 可能 → merge して完了
+├─ 分岐検知 →
+│   1. conflict/{hostname}/{YYYYMMDD-HHMMSS} ブランチを作成
+│   2. ローカルの変更をそこに commit
+│   3. main を origin/main に reset
+│   4. 通知（下記）
+└─ 最新 → 何もしない
+```
+
+### conflict 通知
+
+分岐を検知したとき、以下の2つで通知する：
+
+1. **ターミナル警告バナー**：シェル起動時に色付きの目立つ警告を表示。
+2. **マーカーファイル**：`.conflict-pending` を作成。他ツール/スクリプトから検知可能。
+   conflict branch が解消されたら、次回pull時に自動削除される。
+
+### conflict の解消手順
+
+```bash
+cd ~/dotfiles
+git log --oneline --graph --all       # 状況を確認
+git checkout conflict/xxx/xxx         # conflict branch の内容を確認
+git checkout main
+git merge conflict/xxx/xxx            # main に取り込む（コンフリクトがあれば手で直す）
+git branch -d conflict/xxx/xxx        # branch 削除
+git push origin main
+# 次回のシェル起動時に .conflict-pending が自動削除される
+```
+
+## commit message 自動生成
+
+auto-commit 時に diff から変更内容をシェルスクリプトで要約する。
+
+- フォーマット：`{action}: {files}`
+- 例：
+  - `update: AGENTS.md`
+  - `add: skills/code-review`
+  - `update: AGENTS.md, commands/review.md`
+- 外部依存なし（シェルスクリプトのみで完結）
+
+## 初期セットアップ（新端末）
+
+```bash
+git clone git@github.com:kokukaityo/dotfile.git ~/dotfiles
+cd ~/dotfiles
+bash .infra/setup.sh        # symlink配置 + Git hook設置
+```
 
 ## 日常運用
 
-- **編集**：どの端末でも `~/dotfiles/ai/` 配下を直接編集してよい（symlink先を編集しても実体に届く）。
-- **同期**：
-  - セッション開始時に自動 `pull --ff-only`（post-mergeフックがsymlinkを張り直す）。
-  - **pushは手動**を基本にする：`cd ~/dotfiles && git add -A && git commit -m "..." && git push`。
-  - pre-pushフックが、未解決コンフリクトマーカーやdetached状態を検知したらpushを中止する。
-
-### コンフリクトが起きたら（`pull --ff-only` が失敗したら）
-端末間で分岐している合図。慌てず：
-```bash
-cd ~/dotfiles
-git fetch
-git log --oneline --graph --all   # どちらが進んでいるか確認
-git rebase origin/main            # 自分の変更を相手の上に乗せ直す（個人ファイルなので大抵すぐ済む）
-# コンフリクト箇所を手で直して
-git rebase --continue
-git push
-```
-個人のdotfilesなので、同一行の同時編集が無い限りコンフリクトはまず起きない。
-起きても解決は数分。**自動mergeさせず、必ず人が見て解決する**のが正本を守るコツ。
-
-## 多端末編集でコンフリクトを最小化する習慣
-
-- 編集を始める前に一度 `pull`（フックに任せず手でもよい）。
-- 編集が終わったら**こまめにpush**（セッション終了まで溜めない）。push遅延が分岐の最大要因。
-- 大きめの再構成は1端末に寄せる。
+- **設定ファイルの編集**：symlink先を直接編集してよい。保存すれば自動で同期される。
+- **pull**：シェル起動時に自動。意識不要。
+- **conflict**：ターミナルに警告が出たら、上記の解消手順に従う。
+- **インフラの編集**：`.infra/` 配下を編集した場合は手動でcommit/push。
 
 ## セキュリティ（業務端末を含むため重要）
 
 - **APIキー・トークン・`~/.codex/auth.json`・SSH鍵はdotfilesに置かない**。各端末ローカルに置き、環境変数で参照。
 - MCPの**サーバー定義は同期してよいが、認証部分は環境変数化**して実値はコミットしない。
 - リポジトリは必ず **private**。誤って鍵を入れた場合に備え `.gitignore` で `*auth*`, `*.key`, `*.pem`, `.env*` を除外。
-- 業務端末：私的Gitリポジトリの設置が許される前提だが、**業務情報・社内固有設定は絶対にこのdotfilesへ入れない**
-  （私的設定の同期に限定する）。業務固有のものは業務端末ローカルに別管理。
-
-## 業務端末の運用ルール（編集可だが慎重に）
-
-- 業務端末からも編集・pushしてよいが、**機微情報の混入に最大限注意**。push前に `git diff --cached` を必ず目視。
-- 業務ネットワークのプロキシ等でpushが不安定なら、業務端末は**pull優先・pushは最小限**に寄せると事故が減る。
+- 業務端末：私的Gitリポジトリの設置が許される前提だが、**業務情報・社内固有設定は絶対にこのdotfilesへ入れない**。
+- push前に pre-push hook がシークレット混入を検知して止める。
