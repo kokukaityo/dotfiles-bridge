@@ -74,11 +74,11 @@ win32:
 | ブランチ | 用途 | 管理 |
 | --- | --- | --- |
 | **main** | 正本。auto-sync対象。常にリモートと一致させる | 自動 |
-| **develop** | インフラ改修・ファイル整理の作業用 | 手動。完了後mainにmerge |
+| **feature/xxx** | インフラ改修・構造変更の作業用 | 手動。mainから切って完了後mainにmerge |
 | **conflict/{hostname}/{YYYYMMDD-HHMMSS}** | 分岐検知時の自動退避先 | 自動作成。手動resolve後に削除 |
 
 - 普段使うのは **main のみ**。設定ファイルの自動syncはすべてmainに対して行われる。
-- **develop** は大きめの構造変更や `.infra/` の改修時に使う。auto-syncは走らないので安全に作業できる。
+- **feature branch** はインフラ改修や構造変更時にmainから切る。main以外ではauto-syncが走らないので安全に作業できる。
 - **conflict branch** は分岐検知時に自動で作られる。ローカルの変更を退避し、mainはリモートに合わせる。
 
 ## 同期フロー
@@ -89,6 +89,7 @@ auto-sync対象カテゴリ（現在は ai-agent/ のみ）のファイル保存
 
 ```
 ファイル保存を検知
+→ ブランチ確認（main以外なら何もしない）
 → debounce（数秒待って連続保存をまとめる）
 → git add <対象カテゴリ>/
 → commit message を diff から自動生成
@@ -96,6 +97,7 @@ auto-sync対象カテゴリ（現在は ai-agent/ のみ）のファイル保存
 → git push origin main
 ```
 
+- **main以外ではauto-syncしない**。feature branchに切り替えるだけでsyncが止まる。
 - 他のカテゴリ（editor/, shell/）は将来opt-in可能な設計。
 - インフラ（.infra/, README）は自動syncの対象外。手動でcommit/pushする。
 
@@ -124,13 +126,28 @@ git fetch origin
 
 ### conflict の解消手順
 
+main上で直接mergeしない。解消用ブランチを切り、そこでresolveしてからmainに戻す。
+main が壊れるリスクを避け、失敗しても捨ててやり直せる。
+
 ```bash
 cd ~/dotfiles
-git log --oneline --graph --all       # 状況を確認
-git checkout conflict/xxx/xxx         # conflict branch の内容を確認
+git log --oneline --graph --all              # 状況を確認
+
+# 1. main から解消用ブランチを切る
+git checkout -b resolve/conflict-xxx main
+
+# 2. conflict branch を merge（コンフリクトがあれば手で直す）
+git merge conflict/xxx/xxx
+# ... 手動で resolve ...
+git add . && git commit
+
+# 3. 解消できたら main に戻して取り込む（ff-only で安全に）
 git checkout main
-git merge conflict/xxx/xxx            # main に取り込む（コンフリクトがあれば手で直す）
-git branch -d conflict/xxx/xxx        # branch 削除
+git merge --ff-only resolve/conflict-xxx
+
+# 4. 後片付け
+git branch -d resolve/conflict-xxx
+git branch -d conflict/xxx/xxx
 git push origin main
 # 次回のシェル起動時に .conflict-pending が自動削除される
 ```
