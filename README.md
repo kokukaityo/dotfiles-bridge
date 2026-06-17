@@ -8,7 +8,7 @@
 - **正本管理**：設定ファイルの実体を `~/dotfiles` 配下に集約する。
 - **symlink 配置**：各ツールが読む設定パスへ、正本から symlink を張る。
 - **Git 同期**：commit / push / pull で複数端末へ変更を伝播する。
-- **自動化の範囲を分離**：設定ファイルは `auto-sync`、インフラ（スクリプト・hook・README）は手動管理にする。
+- **同期モードを宣言管理**：フォルダごとの同期モード（auto / manual / ignore）を `.infra/sync.yaml` で定義する。
 - **シークレットを除外**：APIキー・トークン・`auth.json` 類は同期しない。
 
 ## 日常運用
@@ -23,10 +23,11 @@
 
 ### push（自動 — ファイル監視）
 
-`auto-sync` 対象カテゴリ（現在は `ai-agent/` のみ）のファイル保存を監視し、自動で commit / push する。
+`.infra/sync.yaml` で `sync: auto` に指定されたカテゴリのファイル保存を監視し、自動で commit / push する。
 
 ```
 ファイル保存を検知
+→ sync.yaml の auto カテゴリか確認
 → ブランチ確認（main以外なら何もしない）
 → debounce（数秒待って連続保存をまとめる）
 → git add <対象カテゴリ>/
@@ -36,8 +37,9 @@
 ```
 
 - **main 以外では auto-sync しない**。feature branch に切り替えるだけで sync が止まる。
-- 他のカテゴリ（`editor/`, `shell/`）は将来 opt-in 可能な設計。
-- インフラ（`.infra/`, README）は `auto-sync` の対象外。手動で commit / push する。
+- 対象カテゴリは `.infra/sync.yaml` で宣言する（§同期モード設定）。
+- `sync: manual` のカテゴリ（`.infra/` 等）は手動で commit / push する。
+- `sync: ignore` のカテゴリ（`backup/` 等）は Git 追跡しない。
 
 ### pull（セッション開始時）
 
@@ -95,7 +97,7 @@ git push origin main
 
 - **正本は1箇所**：`~/dotfiles` 配下の実体ファイル。各ツールの設定パスは symlink で参照する。
 - **カテゴリ分類**：設定はカテゴリ別ディレクトリに分ける（`ai-agent/`, `editor/`, `shell/` 等）。命名は単数形で統一する。
-- **2層管理**：設定ファイルはファイル監視で `auto-sync` する。インフラ（スクリプト・hook）は手動管理する。
+- **同期モードは宣言的に管理**：フォルダごとの同期モード（auto / manual / ignore）を `.infra/sync.yaml` で宣言する。スクリプトはこの定義を読んで動く。
 - **同期はGit**：commit / push / pull で端末間に伝播する。履歴・差分が残るので「育てる」用途に向く。
 - **conflict は退避**：分岐を検知したら `conflict branch` に退避し、main をリモートに合わせる。解消は手動で行う。
 - **commit message は自動生成**：diff から変更内容を要約し、何をしたかが履歴に残る。
@@ -106,7 +108,8 @@ git push origin main
 ```
 ~/dotfiles/
 ├── .infra/                      # インフラ（隠しディレクトリ）
-│   ├── sync.sh                  # pull / push サブコマンド
+│   ├── sync.yaml                # フォルダ同期モード定義
+│   ├── sync.sh                  # pull / push サブコマンド（sync.yamlを読む）
 │   ├── link.sh                  # symlink配置エンジン（link.yamlを読む）
 │   ├── setup.sh                 # 初期セットアップ
 │   └── hook/
@@ -156,6 +159,41 @@ win32:
 
 `.infra/link.sh` が OS を判定し、該当セクションのエントリを処理する。
 新しいカテゴリを追加するときは、ディレクトリを作って `link.yaml` を置くだけ。
+
+## 同期モード設定：sync.yaml
+
+`.infra/sync.yaml` で、フォルダごとの同期モードを宣言する。
+
+| モード | 動作 | 例 |
+| --- | --- | --- |
+| **auto** | ファイル監視 → 自動 commit / push | `ai-agent/`, `editor/`, `shell/` |
+| **manual** | Git 追跡するが commit / push は手動 | `.infra/`, README |
+| **ignore** | Git 追跡しない（`.gitignore` 自動生成） | `backup/`, `raw/` |
+
+```yaml
+# .infra/sync.yaml
+ai-agent:
+  sync: auto
+
+editor:
+  sync: auto
+
+shell:
+  sync: auto
+
+.infra:
+  sync: manual
+
+backup:
+  sync: ignore
+
+raw:
+  sync: ignore
+```
+
+- `sync.yaml` に未記載のフォルダはデフォルト `manual`（安全側に倒す）。
+- `sync: ignore` のフォルダは `.gitignore` へ自動追記される。`.infra/sync.sh` が sync.yaml を読み、`.gitignore` を生成する。
+- カテゴリの追加・変更は sync.yaml を編集するだけ。スクリプト側の変更は不要。
 
 ## ブランチ戦略
 
