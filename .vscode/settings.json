@@ -1,0 +1,3 @@
+{
+    "window.title": "dotfile : ${folderName}${separator}${dirty}${activeEditorShort}"
+}
