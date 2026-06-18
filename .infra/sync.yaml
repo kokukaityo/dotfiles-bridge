@@ -1,0 +1,17 @@
+ai-agent:
+    sync: auto
+
+editor:
+    sync: auto
+
+shell:
+    sync: auto
+
+.infra:
+    sync: manual
+
+backup:
+    sync: ignore
+
+raw:
+    sync: ignore

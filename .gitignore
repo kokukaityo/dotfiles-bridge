@@ -1,0 +1,14 @@
+# --- auto-generated from sync.yaml (do not edit below) ---
+
+# Security exclusions
+*auth*
+*.key
+*.pem
+.env*
+
+# Ignored categories (sync: ignore in sync.yaml)
+backup/
+raw/
+
+.conflict-pending
+# --- end auto-generated ---
