@@ -2,8 +2,7 @@
 # .infra/link.sh — 各カテゴリの link.yaml を読み、OS に応じた symlink を配置する。
 set -euo pipefail
 
-DOTFILES="${DOTFILES:-$HOME/dotfiles}"
-INFRA="$DOTFILES/.infra"
+source "$(cd "$(dirname "$0")" && pwd)/env.sh"
 
 detect_os() {
     case "$OSTYPE" in
@@ -135,7 +134,7 @@ main() {
     echo "=== dotfiles link ($os_key) ==="
     echo ""
 
-    for yaml in "$DOTFILES"/*/link.yaml; do
+    for yaml in "$DOTFILE"/*/link.yaml; do
         [ -f "$yaml" ] || continue
         process_category "$(dirname "$yaml")" "$os_key"
     done

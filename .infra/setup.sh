@@ -3,10 +3,9 @@
 # symlink 配置 + Git hook 設置 + .gitignore 生成を一括で行う。
 set -euo pipefail
 
-DOTFILES="${DOTFILES:-$HOME/dotfiles}"
-INFRA="$DOTFILES/.infra"
+source "$(cd "$(dirname "$0")" && pwd)/env.sh"
 
-cd "$DOTFILES"
+cd "$DOTFILE"
 
 echo "=== dotfiles setup ==="
 echo ""

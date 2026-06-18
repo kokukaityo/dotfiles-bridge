@@ -3,11 +3,9 @@
 # サブコマンド: pull / push / gitignore
 set -euo pipefail
 
-DOTFILES="${DOTFILES:-$HOME/dotfiles}"
-INFRA="$DOTFILES/.infra"
-SYNC_YAML="$INFRA/sync.yaml"
+source "$(cd "$(dirname "$0")" && pwd)/env.sh"
 
-# --- sync.yaml パーサー ---
+# --- conf.yaml パーサー ---
 
 # parse_sync_yaml: "category\tmode" 形式で出力
 parse_sync_yaml() {
@@ -72,8 +70,8 @@ generate_commit_msg() {
 # --- .gitignore 生成 ---
 
 cmd_gitignore() {
-    local gitignore="$DOTFILES/.gitignore"
-    local marker_start="# --- auto-generated from sync.yaml (do not edit below) ---"
+    local gitignore="$DOTFILE/.gitignore"
+    local marker_start="# --- auto-generated from conf.yaml (do not edit below) ---"
     local marker_end="# --- end auto-generated ---"
 
     # 手動セクションを保持
@@ -94,7 +92,7 @@ cmd_gitignore() {
         echo "*.pem"
         echo ".env*"
         echo ""
-        echo "# Ignored categories (sync: ignore in sync.yaml)"
+        echo "# Ignored categories (sync: ignore in conf.yaml)"
         for cat in $(get_categories_by_mode "ignore"); do
             echo "${cat}/"
         done
@@ -109,7 +107,7 @@ cmd_gitignore() {
 # --- pull ---
 
 cmd_pull() {
-    cd "$DOTFILES"
+    cd "$DOTFILE"
 
     # conflict branch が全て削除済みなら .conflict-pending を掃除
     if [ -f .conflict-pending ]; then
@@ -177,7 +175,7 @@ cmd_pull() {
 # --- push ---
 
 cmd_push() {
-    cd "$DOTFILES"
+    cd "$DOTFILE"
 
     local current_branch
     current_branch="$(git branch --show-current)"
@@ -188,8 +186,8 @@ cmd_push() {
 
     local has_changes=false
     for cat in $(get_categories_by_mode "auto"); do
-        if [ -d "$DOTFILES/$cat" ]; then
-            git add "$DOTFILES/$cat/"
+        if [ -d "$DOTFILE/$cat" ]; then
+            git add "$DOTFILE/$cat/"
         fi
     done
 
@@ -208,11 +206,11 @@ cmd_push() {
 # --- conflict 通知バナー（シェル起動時に呼ぶ用） ---
 
 cmd_status() {
-    if [ -f "$DOTFILES/.conflict-pending" ]; then
+    if [ -f "$DOTFILE/.conflict-pending" ]; then
         echo ""
         echo "========================================"
         echo "  [dotfiles] CONFLICT PENDING"
-        echo "  Run: cd $DOTFILES && git log --oneline --graph --all"
+        echo "  Run: cd $DOTFILE && git log --oneline --graph --all"
         echo "  See README.md for resolution steps."
         echo "========================================"
         echo ""
@@ -230,7 +228,7 @@ case "${1:-help}" in
         echo "Usage: sync.sh {pull|push|gitignore|status}"
         echo "  pull      — fetch and merge (or create conflict branch)"
         echo "  push      — auto-commit and push (auto categories only)"
-        echo "  gitignore — regenerate .gitignore from sync.yaml"
+        echo "  gitignore — regenerate .gitignore from conf.yaml"
         echo "  status    — show conflict warning if pending"
         exit 1
         ;;
