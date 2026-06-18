@@ -1,4 +1,4 @@
-# --- auto-generated from sync.yaml (do not edit below) ---
+# --- auto-generated from conf.yaml (do not edit below) ---
 
 # Security exclusions
 *auth*
@@ -6,7 +6,7 @@
 *.pem
 .env*
 
-# Ignored categories (sync: ignore in sync.yaml)
+# Ignored categories (sync: ignore in conf.yaml)
 backup/
 raw/
 

@@ -2,9 +2,9 @@
 # post-merge — git pull / merge の後に走る。
 # symlink を張り直して、新しい設定ファイルを取りこぼさない。
 set -euo pipefail
-DOTFILES="${DOTFILES:-$HOME/dotfiles}"
-if [ -f "$DOTFILES/.infra/link.sh" ]; then
-  bash "$DOTFILES/.infra/link.sh" >/dev/null 2>&1 || \
+source "$(cd "$(dirname "$0")" && pwd)/../env.sh"
+if [ -f "$DOTFILE/.infra/link.sh" ]; then
+  bash "$DOTFILE/.infra/link.sh" >/dev/null 2>&1 || \
     echo "[post-merge] link.sh failed; run 'bash .infra/link.sh' manually."
   echo "[post-merge] symlinks refreshed."
 fi
