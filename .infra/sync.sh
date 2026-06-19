@@ -126,6 +126,11 @@ cmd_pull() {
         return 0
     fi
 
+    if [ "$remote_head" = "$merge_base" ]; then
+        echo "[sync] Local main is ahead of origin/main. Skipping pull."
+        return 0
+    fi
+
     # 分岐検知 → conflict branch に退避
     local hostname_str
     hostname_str="$(hostname)"
