@@ -3,7 +3,7 @@
 # symlink 配置 + Git hook 設置 + .gitignore 生成を一括で行う。
 set -euo pipefail
 
-source "$(cd "$(dirname "$0")" && pwd)/env.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/conf.sh"
 
 cd "$DOTFILE"
 
