@@ -3,33 +3,18 @@
 # サブコマンド: pull / push / gitignore
 set -euo pipefail
 
-source "$(cd "$(dirname "$0")" && pwd)/env.sh"
-
-# --- conf.yaml パーサー ---
-
-# parse_sync_yaml: "category\tmode" 形式で出力
-parse_sync_yaml() {
-    local current_category=""
-    while IFS= read -r line || [ -n "$line" ]; do
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*$ ]] && continue
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-
-        if [[ "$line" =~ ^[a-zA-Z._] ]]; then
-            current_category="${line%%:*}"
-            continue
-        fi
-
-        if [[ "$line" =~ sync:[[:space:]]*([a-z]+) ]]; then
-            echo "${current_category}	${BASH_REMATCH[1]}"
-        fi
-    done < "$SYNC_YAML"
-}
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/conf.sh"
 
 get_categories_by_mode() {
-    local mode="$1"
-    parse_sync_yaml | while IFS=$'\t' read -r cat m; do
-        [ "$m" = "$mode" ] && echo "$cat"
-    done
+    case "$1" in
+        auto)   printf '%s\n' "${SYNC_AUTO[@]}" ;;
+        manual) printf '%s\n' "${SYNC_MANUAL[@]}" ;;
+        ignore) printf '%s\n' "${SYNC_IGNORE[@]}" ;;
+        *)
+            echo "Unknown sync mode: $1" >&2
+            return 1
+            ;;
+    esac
 }
 
 # --- commit message 自動生成 ---
@@ -71,7 +56,7 @@ generate_commit_msg() {
 
 cmd_gitignore() {
     local gitignore="$DOTFILE/.gitignore"
-    local marker_start="# --- auto-generated from conf.yaml (do not edit below) ---"
+    local marker_start="# --- auto-generated from conf.sh (do not edit below) ---"
     local marker_end="# --- end auto-generated ---"
 
     # 手動セクションを保持
@@ -92,7 +77,7 @@ cmd_gitignore() {
         echo "*.pem"
         echo ".env*"
         echo ""
-        echo "# Ignored categories (sync: ignore in conf.yaml)"
+        echo "# Ignored categories (SYNC_IGNORE in conf.sh)"
         for cat in $(get_categories_by_mode "ignore"); do
             echo "${cat}/"
         done
@@ -228,7 +213,7 @@ case "${1:-help}" in
         echo "Usage: sync.sh {pull|push|gitignore|status}"
         echo "  pull      — fetch and merge (or create conflict branch)"
         echo "  push      — auto-commit and push (auto categories only)"
-        echo "  gitignore — regenerate .gitignore from conf.yaml"
+        echo "  gitignore — regenerate .gitignore from conf.sh"
         echo "  status    — show conflict warning if pending"
         exit 1
         ;;

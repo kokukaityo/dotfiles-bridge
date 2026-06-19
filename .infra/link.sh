@@ -2,7 +2,7 @@
 # .infra/link.sh — 各カテゴリの link.yaml を読み、OS に応じた symlink を配置する。
 set -euo pipefail
 
-source "$(cd "$(dirname "$0")" && pwd)/env.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/conf.sh"
 
 detect_os() {
     case "$OSTYPE" in

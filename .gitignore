@@ -1,4 +1,4 @@
-# --- auto-generated from conf.yaml (do not edit below) ---
+# --- auto-generated from conf.sh (do not edit below) ---
 
 # Security exclusions
 *auth*
@@ -6,7 +6,7 @@
 *.pem
 .env*
 
-# Ignored categories (sync: ignore in conf.yaml)
+# Ignored categories (SYNC_IGNORE in conf.sh)
 backup/
 raw/
 
