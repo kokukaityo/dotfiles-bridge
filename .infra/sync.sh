@@ -21,9 +21,9 @@ get_categories_by_mode() {
 
 generate_commit_msg() {
     local added modified deleted
-    added="$(git diff --cached --diff-filter=A --name-only 2>/dev/null || true)"
-    modified="$(git diff --cached --diff-filter=M --name-only 2>/dev/null || true)"
-    deleted="$(git diff --cached --diff-filter=D --name-only 2>/dev/null || true)"
+    added="$(git diff --cached --diff-filter=A --name-only -- "$@" 2>/dev/null || true)"
+    modified="$(git diff --cached --diff-filter=M --name-only -- "$@" 2>/dev/null || true)"
+    deleted="$(git diff --cached --diff-filter=D --name-only -- "$@" 2>/dev/null || true)"
 
     local parts=()
 
@@ -169,21 +169,23 @@ cmd_push() {
         return 0
     fi
 
-    local has_changes=false
+    local auto_paths=()
     for cat in $(get_categories_by_mode "auto"); do
         if [ -d "$DOTFILE/$cat" ]; then
-            git add "$DOTFILE/$cat/"
+            auto_paths+=("$cat")
+            git add -- "$cat/"
         fi
     done
 
-    if [ -z "$(git diff --cached --name-only)" ]; then
+    if [ ${#auto_paths[@]} -eq 0 ] ||
+        [ -z "$(git diff --cached --name-only -- "${auto_paths[@]}")" ]; then
         echo "[sync] No changes in auto-sync categories."
         return 0
     fi
 
     local msg
-    msg="$(generate_commit_msg)"
-    git commit -m "$msg"
+    msg="$(generate_commit_msg "${auto_paths[@]}")"
+    git commit --only -m "$msg" -- "${auto_paths[@]}"
     git push origin main
     echo "[sync] Pushed: $msg"
 }
