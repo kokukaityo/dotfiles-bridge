@@ -1,0 +1,9 @@
+{
+    // postCreateCommand は動作未確認。Codespace新規作成時のみ実行される。
+    // 初回は手動で以下を実行:
+    //   npm install -g @anthropic-ai/claude-code
+    //   claude auth login（または Codespaces Secrets に ANTHROPIC_API_KEY を設定）
+    //   claude → /config → Enable Remote Control for all sessions → true
+    // "postCreateCommand": "npm install -g @anthropic-ai/claude-code",
+    "postStartCommand": "nohup claude &"
+}
