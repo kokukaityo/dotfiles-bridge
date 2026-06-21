@@ -16,12 +16,13 @@ dotfile engine
 │   ├── status.go        status / delete-category / gitignoreサブコマンド
 │   └── version.go       versionサブコマンド
 ├── internal/
-│   ├── config.go        リポジトリ解決とTOML設定
+│   ├── conf.go          リポジトリ解決とTOML設定
+│   ├── conf.toml        エンジン内部定数（パス名、Gitキー、hookソース等）
 │   ├── git.go           gitコマンド実行
 │   ├── link.go          symlink配置
 │   ├── setup.go         initとsetup
 │   ├── sync.go          pull、push、削除、gitignore、status
-│   ├── platform.go      OS名とホーム展開
+│   ├── tool.go          OS名変換、ホーム展開、ファイル置換等のユーティリティ
 │   └── hook/
 │       ├── pre-push     Git hook（シェルスクリプト）
 │       └── post-merge   Git hook（シェルスクリプト）
