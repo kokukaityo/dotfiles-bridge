@@ -7,6 +7,22 @@
 - **Codespace**: `.devcontainer/` あり（詳細は末尾の Appendix）
 - **ShellCheck**: 未導入（将来導入予定）
 
+## コーディング規約
+
+- 実行スクリプトの先頭で `set -euo pipefail` を有効にする
+- `bin/dotfile` 内のコマンド関数は `cmd_<subcommand>` とする
+- `lib/` 内の関数は、動詞から始まる snake_case とする（例: `detect_os`, `generate_commit_msg`）
+- 変数を引用し、未設定を許容する展開には `${VAR:-}` または `${VAR:-default}` を使う
+- ユーザー向けメッセージは日本語にする
+- エラーは `[dotfile]`、`[sync]` など適切なプレフィックスを付け、stderr へ出力する
+- macOS で利用できない `readlink -f` は使わない。必要なら `bin/dotfile` の `resolve_path()` を参照する
+- GNU 固有機能への依存を増やす場合は、macOS と Git Bash での代替手段を確認する
+
+## コミット規約
+
+- Conventional Commits を使用する（`feat:`、`fix:`、`refactor:`、`docs:`、`test:`、`chore:` など）
+- コミットメッセージは日本語でもよい
+
 ## ブランチ運用
 
 | ブランチ | 用途 |
@@ -23,6 +39,13 @@
 3. **GitHub Actions CI**（最後）: push ごとに Docker(Linux) + macOS runner で bats を回す
 
 E2E を優先する理由: このツールの本質は symlink・Git・ファイル配置という副作用の検証であり、純粋関数のロジック検証ではない。
+
+自動テスト導入前は、変更内容に応じて最低限次を実施する。
+
+1. 変更した Bash ファイルを `bash -n <file>` で構文確認する
+2. CLI に影響する場合は `bash bin/dotfile help` など、副作用のない経路で基本動作を確認する
+3. Git、symlink、ファイル削除を伴う確認は、一時ディレクトリまたは隔離したテストリポジトリで行う
+4. Windows Git Bash、macOS、Linux の互換性リスクを確認する
 
 ## 変更時のチェックリスト
 
