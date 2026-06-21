@@ -1,0 +1,13 @@
+# shell/link.yaml — シェル設定の symlink 定義
+#
+# 例:
+#
+# darwin:
+#     .zshrc:
+#         - ~/.zshrc
+#     .bashrc:
+#         - ~/.bashrc
+#
+# linux:
+#     .bashrc:
+#         - ~/.bashrc

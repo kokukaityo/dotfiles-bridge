@@ -1,0 +1,14 @@
+# --- auto-generated from conf.sh (do not edit below) ---
+
+# Security exclusions
+*auth*
+*.key
+*.pem
+.env*
+
+# Ignored categories (SYNC_IGNORE in conf.sh)
+backup/
+raw/
+
+.conflict-pending
+# --- end auto-generated ---
