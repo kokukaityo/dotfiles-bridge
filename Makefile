@@ -1,4 +1,4 @@
-.PHONY: build lint fmt test clean
+.PHONY: build lint fmt test bats clean
 
 build:
 	go build -o dist/dotfile ./cmd
@@ -11,6 +11,9 @@ fmt:
 
 test:
 	go test ./...
+
+bats: build
+	npx bats test/bats/
 
 clean:
 	rm -rf dist/

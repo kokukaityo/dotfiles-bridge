@@ -6,3 +6,6 @@
 # Go
 dist/
 *.exe
+
+# Node.js (bats test dependencies)
+node_modules/

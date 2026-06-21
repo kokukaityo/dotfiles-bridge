@@ -5,13 +5,15 @@
 | ツール        | バージョン | 用途               |
 | ------------- | ---------: | ------------------ |
 | Go            |      1.26+ | build、test        |
-| Git           |        2.x | 実処理と統合テスト |
 | gofumpt       |     latest | formatter          |
 | golangci-lint |     latest | lint               |
+| Node.js / npm |     latest | bats統合テスト     |
+| Git           |        2.x | 実処理と統合テスト |
 
 ```bash
 go install mvdan.cc/gofumpt@latest
 go install github.com/golangci-lint/golangci-lint/cmd/golangci-lint@latest
+npm install
 ```
 
 ## 開発コマンド
@@ -22,6 +24,7 @@ go install github.com/golangci-lint/golangci-lint/cmd/golangci-lint@latest
 | `make lint`  | golangci-lintを実行     |
 | `make fmt`   | Goコードをgofumptで整形 |
 | `make test`  | 全Goテストを実行        |
+| `make bats`  | bats統合テストを実行    |
 | `make clean` | build成果物を削除       |
 
 依存更新後は `go mod tidy` を実行し、`go.mod` と `go.sum` を両方commitする。
@@ -57,6 +60,7 @@ go install github.com/golangci-lint/golangci-lint/cmd/golangci-lint@latest
 make fmt
 make lint
 make test
+make bats
 make build
 ```
 
