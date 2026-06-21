@@ -1,0 +1,4 @@
+default_branch = "main"
+auto = ["ai-agent", "editor", "shell"]
+manual = []
+ignore = ["backup", "raw"]

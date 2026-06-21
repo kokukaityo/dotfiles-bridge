@@ -1,0 +1,58 @@
+package engine
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestLoadConfig(t *testing.T) {
+	dir := t.TempDir()
+	writeTestFile(t, filepath.Join(dir, ".infra-version"), "1.2.0\n")
+	writeTestFile(t, filepath.Join(dir, "sync.toml"), `
+default_branch = "develop"
+auto = ["editor"]
+manual = ["shell"]
+ignore = ["raw"]
+`)
+
+	config, err := loadConfig(dir, "1.3.0\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Sync.DefaultBranch != "develop" {
+		t.Fatalf("DefaultBranch = %q", config.Sync.DefaultBranch)
+	}
+	if config.VersionMismatch() {
+		t.Fatal("同じメジャーバージョンを不整合と判定した")
+	}
+}
+
+func TestLoadConfigRejectsInvalidBranch(t *testing.T) {
+	dir := t.TempDir()
+	writeTestFile(t, filepath.Join(dir, ".infra-version"), "1.0.0")
+	writeTestFile(t, filepath.Join(dir, "sync.toml"), `default_branch = "bad branch"`)
+
+	if _, err := loadConfig(dir, "1.0.0"); err == nil {
+		t.Fatal("不正なブランチ名が受理された")
+	}
+}
+
+func TestVersionMismatch(t *testing.T) {
+	t.Parallel()
+
+	config := Config{EngineVersion: "2.0.0", DataVersion: "1.9.0"}
+	if !config.VersionMismatch() {
+		t.Fatal("異なるメジャーバージョンを一致と判定した")
+	}
+}
+
+func writeTestFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -2,141 +2,84 @@
 
 ## 全体構成
 
-### エンジン/データ分離モデル
+`dotfile` はGoのシングルバイナリとして動作し、ユーザー固有データは別のGitリポジトリで管理する。
 
-```
-┌──────────────────────────────┐     ┌──────────────────────────────┐
-│  dotfiles エンジン            │     │  ユーザーデータリポジトリ      │
-│  (kokukaityo/dotfile)        │     │  (各ユーザーの private repo)  │
-│  public / MIT                │     │                              │
-│                              │     │  sync.conf                   │
-│  bin/dotfiles ─── エントリ   │────▶│  .infra-version              │
-│  lib/         ─── ロジック   │     │  ai-agent/  editor/  shell/  │
-│  template/    ─── 雛形       │     │  (各カテゴリ + link.yaml)     │
-└──────────────────────────────┘     └──────────────────────────────┘
-     インストール先:                      デフォルト: ~/dotfiles
-     ~/.local/share/dotfiles/             dotfiles init で生成
-```
+```text
+dotfile engine
+├── cmd/main.go          CLIエントリポイントと終了コード
+├── embed.go             VERSION、template、hooksの埋め込み
+└── internal/engine/
+    ├── command.go       Cobraコマンド
+    ├── config.go        リポジトリ解決とTOML設定
+    ├── git.go           gitコマンド実行
+    ├── link.go          symlink配置
+    ├── setup.go         initとsetup
+    ├── sync.go          pull、push、削除、gitignore、status
+    └── platform.go      OS名とホーム展開
 
-- エンジンに個人データは含まない。ユーザーは `dotfiles init` でデータリポジトリを生成する
-- fork ではなく template 方式を採用。GitHub の fork ネットワークは CFOR（Cross Fork Object Reference）脆弱性があり、private repo の commit が fork 元の public repo 経由で参照可能になるため
-
-### データリポジトリの解決順序
-
-`lib/conf.sh` の `resolve_dotfiles_dir()` が以下の優先順位でデータリポジトリを探す:
-
-1. `DOTFILES_DIR` 環境変数が設定されている → そのパス
-2. カレント git root に `.infra-version` が存在する → そのリポジトリ
-3. `$HOME/dotfiles` に `.infra-version` が存在する → `$HOME/dotfiles`
-4. いずれも見つからない → エラー
-
----
-
-## レイヤー構造と責務
-
-```
-bin/dotfiles         サブコマンドを受け取り、lib/ に委譲する
-    │
-    ├── lib/conf.sh      データリポジトリ解決、sync.conf 読み込み、バージョン互換チェック
-    │       ↑ source される（lib/ 内の全スクリプトが依存）
-    │
-    ├── lib/sync.sh      Git 操作: pull / push / delete-category / gitignore / status
-    │
-    ├── lib/link.sh      symlink 配置: link.yaml 解析、OS 判定、symlink 作成
-    │
-    └── lib/hooks/
-        ├── pre-push     push 前ガード: コンフリクトマーカー検知、シークレット検知
-        └── post-merge   merge 後: symlink 再配置（dotfiles link を自動実行）
+user data repository
+├── .infra-version
+├── sync.toml
+└── <category>/
+    └── link.toml
 ```
 
-### bin/dotfiles — ルーティング層
+エンジンには個人データを含めない。`template/` は `dotfile init` で展開する初期雛形だけを持つ。
 
-- サブコマンド（`init`, `setup`, `link`, `pull`, `push`, `delete-category`, `gitignore`, `status`, `version`, `help`）を受け取り、対応する処理に振り分ける
-- `cmd_init()` と `cmd_setup()` はこのファイル内に実装（`conf.sh` 不要で動く必要があるため）
-- `link`, `pull`, `push` 等は `bash "$DOTFILES_ENGINE_LIB/sync.sh"` や `bash "$DOTFILES_ENGINE_LIB/link.sh"` で委譲
-- `resolve_path()`: macOS の `readlink -f` 非対応を回避する自前のシンボリックリンク解決
+## 境界と責務
 
-### lib/conf.sh — 設定解決層
+### CLI
 
-- `source` して使う（単体実行しない）
-- データリポジトリのパスを `$DOTFILES` にセット
-- `sync.conf` を source して `SYNC_AUTO`, `SYNC_MANUAL`, `SYNC_IGNORE` 配列を取得
-- `check_version_compat()`: エンジンの `VERSION` とデータの `.infra-version` のメジャーバージョンを比較。不一致時は WARNING
+Cobraは引数検証と出力先を管理する。各 `RunE` はエラーを返し、プロセス終了は `cmd/main.go` だけが担当する。
 
-### lib/sync.sh — 同期層
+### 設定
 
-- `conf.sh` を source して自動的にデータリポジトリのコンテキストを取得
-- **pull**: fetch → ff-only 可能なら merge / ローカルが ahead ならスキップ / 分岐検知なら conflict branch に退避
-- **push**: main ブランチ限定。`SYNC_AUTO` カテゴリのファイルだけ `git add` → 自動 commit message 生成 → push
-- **delete-category**: `SYNC_AUTO` カテゴリの完全削除（ディレクトリ削除 + sync.conf 書き換えを1 commit で atomic に実行）
-- **gitignore**: `sync.conf` の `SYNC_IGNORE` からマーカー付きで `.gitignore` を自動生成。マーカーより上の手動記述は保持
-- **status**: `.conflict-pending` マーカーの有無で警告バナーを表示
+データリポジトリは `DOTFILES_DIR`、現在のGitルート、`~/dotfiles` の順に探索する。
+`sync.toml` の `default_branch` は空値を禁止し、`git check-ref-format --branch` で検証する。
+エンジンとデータの `.infra-version` はメジャーバージョンを比較し、不一致時は警告する。
 
-### lib/link.sh — symlink 配置層
+### Git
 
-- `conf.sh` を source してデータリポジトリのパスを取得
-- `detect_os()`: `$OSTYPE` から OS キー（`darwin` / `win32` / `linux` / `unknown`）を判定
-- `parse_link_yaml()`: 外部依存なしの手製 YAML パーサー。インデントベースで OS セクション → ソースファイル → ターゲットパスを解析
-- `link()`: 既存ファイルがあれば `.bak.<timestamp>` にバックアップしてから symlink 作成
-- `process_category()`: カテゴリディレクトリごとに link.yaml を処理
-- 全カテゴリの `*/link.yaml` をイテレート
+go-gitは使わず、ユーザーのSSH・credential・hook設定を利用するため `os/exec` でGit CLIを呼ぶ。
+自動pushは `auto` カテゴリのpathspecだけをstage・commitする。既定ブランチ以外では実行しない。
 
-### lib/hooks/ — Git Hooks
+pull時に分岐を検出した場合は自動mergeせず、ローカル履歴を `conflict/<hostname>/<timestamp>` へ退避する。
 
-- **pre-push**: ワークツリー内のコンフリクトマーカーとシークレットパターンを `git grep` で検査。`SKIP_SECRET_SCAN=1` でシークレット検知をバイパス可能
-- **post-merge**: `dotfiles link`（PATH にあれば）または `lib/link.sh` を直接実行して symlink を再配置
+### symlink
 
-### template/ — データリポジトリの雛形
+各カテゴリの `link.toml` を読み、`runtime.GOOS` に対応するセクションだけを処理する。
+リンク元はデータリポジトリ内、リンク先はユーザー環境に置く。既存のリンク先はバックアップしてから置換する。
 
-- `dotfiles init` 実行時に `cp -r` でコピーされる
-- `sync.conf`: デフォルトのカテゴリ定義
-- `.infra-version`: エンジンバージョンとの互換チェック用
-- 各カテゴリのサンプル（`ai-agent/`, `editor/`, `shell/` + `link.yaml`）
+### hooks
 
----
+hook本体は互換性のためシェルスクリプトを維持する。バイナリに埋め込み、setup時にデータリポジトリの
+`.dotfile-hook/` へ書き出して `core.hooksPath` を設定する。このディレクトリはGit追跡対象外。
 
-## 設計パターン・設計判断
+## 設定形式
 
-### sync.conf による宣言的カテゴリ管理
+`sync.toml`:
 
-カテゴリごとの同期モードを `sync.conf` の Bash 配列で宣言する:
-
-| モード | 動作 | 例 |
-|---|---|---|
-| `SYNC_AUTO` | `dotfiles push` で自動 commit & push | `ai-agent`, `editor`, `shell` |
-| `SYNC_MANUAL` | Git 追跡するが commit/push は手動 | — |
-| `SYNC_IGNORE` | `.gitignore` に自動追加 | `backup`, `raw` |
-
-スクリプト側にカテゴリ名のハードコーディングはない。カテゴリの追加・変更は `sync.conf` だけで完結する。
-
-### link.yaml の OS 別完全リスト方式
-
-```yaml
-darwin:
-    AGENTS.md:
-        - ~/.codex/AGENTS.md
-win32:
-    AGENTS.md:
-        - ~/.codex/AGENTS.md
+```toml
+default_branch = "main"
+auto = ["editor"]
+manual = ["shell"]
+ignore = ["backup"]
 ```
 
-各 OS セクションにその OS の全エントリを書く。「共通セクション」は持たない。
-理由: OS 間で配置先が異なるケースが多く、共通セクション + 上書きの組み合わせは可読性が下がる。
+`link.toml`:
 
-### コンフリクト時の退避戦略
+```toml
+[darwin]
+"settings.json" = ["~/Library/Application Support/Code/User/settings.json"]
 
-リモートと分岐した場合、merge ではなく `conflict/{hostname}/{timestamp}` ブランチに退避し、main を `origin/main` に reset する。
+[win32]
+"settings.json" = ["~/AppData/Roaming/Code/User/settings.json"]
+```
 
-理由: dotfiles の同期で merge conflict が発生した場合、自動解決は危険。ユーザーが明示的に解消用ブランチで resolve してから main に ff-only で取り込む。main が壊れるリスクを排除する。
+旧 `sync.conf` と `link.yaml` の互換・移行処理は持たない。
 
-### バージョン互換チェック
+## ファイル更新の安全性
 
-エンジンの `VERSION` ファイルとデータの `.infra-version` のメジャーバージョンを比較する。不一致時は WARNING を出すが処理は続行する。
-
-理由: エンジン更新でデータリポジトリのスキーマが変わる可能性がある。メジャーバージョン一致を要求することで不整合を早期に検知する。
-
-### シークレット除外方針
-
-- `.gitignore` で `*auth*`, `*.key`, `*.pem`, `.env*` を広めに除外
-- `pre-push` hook でパターンマッチング（`api_key`, `secret`, `password`, `token`, `BEGIN RSA PRIVATE KEY` 等）
-- プレースホルダー（`example`, `placeholder`, `<your`, `${`）は除外
+`delete-category` は既存の `sync.toml` に未コミット変更がないことを確認する。
+更新内容を同一ディレクトリの一時ファイルへ書き、Unixではrename、Windowsでは退避・置換・失敗時復元を行う。
+カテゴリ削除と設定更新は1つのcommitにまとめる。

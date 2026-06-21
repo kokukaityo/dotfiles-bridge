@@ -1,131 +1,121 @@
-# dotfiles
+# dotfile
 
-複数マシン間で dotfiles（設定ファイル）を同期するためのエンジン。
+複数マシン間で設定ファイルを同期する、Go製のdotfilesエンジン。
 
-- **カテゴリ別管理**: `ai-agent/`, `editor/`, `shell/` などカテゴリごとに設定を分類
-- **OS 別 symlink**: `link.yaml` で OS ごとの配置先を宣言的に定義
-- **自動同期**: シェル起動時に pull、ファイル保存時に auto-commit & push
-- **コンフリクト安全**: 分岐検知時は自動でブランチ退避、データを壊さない
-- **セキュリティガード**: push 前にシークレット混入を検知
+- カテゴリ単位の同期モード管理
+- Windows / macOS / Linux別のsymlink配置
+- Gitによる自動commit・push・pull
+- 分岐時のローカル変更退避
+- push前のコンフリクト・シークレット検査
 
-## インストール
+## ビルド
 
-```bash
-git clone https://github.com/kokukaityo/dotfile.git ~/.local/share/dotfiles
-```
-
-PATH に追加（`~/.bashrc` or `~/.zshrc`）:
+Go 1.26以降が必要。
 
 ```bash
-export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
+make build
 ```
+
+生成されるバイナリは `dist/dotfile`。
 
 ## クイックスタート
 
-### 新規ユーザー
+新しいデータリポジトリを作成する:
 
 ```bash
-# データリポジトリを作成
-dotfiles init ~/dotfiles
-
-# GitHub に private リポジトリを作成後:
+dotfile init ~/dotfiles
 cd ~/dotfiles
 git remote add origin git@github.com:<user>/<repo>.git
 git push -u origin main
 ```
 
-### 2台目以降のマシン
+既存のデータリポジトリを使う:
 
 ```bash
-# エンジンをインストール（上記と同じ）
-git clone https://github.com/kokukaityo/dotfile.git ~/.local/share/dotfiles
-
-# 自分のデータリポジトリをクローン
 git clone git@github.com:<user>/<repo>.git ~/dotfiles
-
-# 初期設定
-dotfiles setup
+export DOTFILES_DIR="$HOME/dotfiles"
+dotfile setup
 ```
 
-## 自動同期の設定
-
-`~/.bashrc` or `~/.zshrc` に追加:
+シェル起動時に同期する場合:
 
 ```bash
 export DOTFILES_DIR="$HOME/dotfiles"
-export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
-command -v dotfiles >/dev/null && dotfiles pull
-command -v dotfiles >/dev/null && dotfiles status
+command -v dotfile >/dev/null && dotfile pull
+command -v dotfile >/dev/null && dotfile status
 ```
 
 ## コマンド
 
-| コマンド | 説明 |
-|---|---|
-| `dotfiles init [path]` | データリポジトリを新規作成（デフォルト: `~/dotfiles`） |
-| `dotfiles setup` | hooks 設定・gitignore 生成・symlink 配置 |
-| `dotfiles link` | symlink を配置 |
-| `dotfiles pull` | リモートから同期 |
-| `dotfiles push` | auto カテゴリの変更を commit & push |
-| `dotfiles delete-category <name>` | カテゴリを削除 |
-| `dotfiles gitignore` | .gitignore を再生成 |
-| `dotfiles status` | コンフリクト状態を表示 |
-| `dotfiles version` | バージョン情報を表示 |
+| コマンド                         | 説明                                          |
+| -------------------------------- | --------------------------------------------- |
+| `dotfile init [path]`            | データリポジトリを作成。既定値は `~/dotfiles` |
+| `dotfile setup`                  | hooks、gitignore、symlinkを設定               |
+| `dotfile link`                   | OSに応じたsymlinkを配置                       |
+| `dotfile pull`                   | リモートから同期                              |
+| `dotfile push`                   | autoカテゴリの変更をcommitしてpush            |
+| `dotfile delete-category <name>` | autoカテゴリを設定とGit履歴から削除           |
+| `dotfile gitignore`              | `.gitignore` の自動生成部分を更新             |
+| `dotfile status`                 | コンフリクト退避状態を表示                    |
+| `dotfile version`                | バージョン情報を表示                          |
 
-## データリポジトリの構成
+データリポジトリは次の順で解決する。
 
-```
+1. `DOTFILES_DIR`
+2. 現在のGitルート（`.infra-version` がある場合）
+3. `~/dotfiles`
+
+## データリポジトリ
+
+```text
 ~/dotfiles/
-├── ai-agent/           # AI エージェント設定
-│   └── link.yaml       # symlink 定義
-├── editor/             # エディタ設定
-│   └── link.yaml
-├── shell/              # シェル設定
-│   └── link.yaml
-├── sync.conf           # 同期モード定義
-└── .infra-version      # 互換エンジンバージョン
+├── .infra-version
+├── sync.toml
+├── ai-agent/
+│   └── link.toml
+├── editor/
+│   └── link.toml
+└── shell/
+    └── link.toml
 ```
 
-### sync.conf
+### sync.toml
 
-カテゴリの同期モードを定義する:
-
-```bash
-SYNC_AUTO=(ai-agent editor shell)   # 自動 commit & push
-SYNC_MANUAL=()                       # git 追跡のみ、push は手動
-SYNC_IGNORE=(backup raw)            # git 追跡しない
+```toml
+default_branch = "main"
+auto = ["ai-agent", "editor", "shell"]
+manual = []
+ignore = ["backup", "raw"]
 ```
 
-### link.yaml
+- `default_branch`: pull、push、カテゴリ削除で使用するブランチ
+- `auto`: `dotfile push` の対象
+- `manual`: Gitで追跡するが自動pushしないカテゴリ
+- `ignore`: 自動生成される `.gitignore` に追加するカテゴリ
 
-OS ごとに symlink の配置先を定義する:
+### link.toml
 
-```yaml
-darwin:
-    .zshrc:
-        - ~/.zshrc
-    settings.json:
-        - ~/Library/Application Support/Code/User/settings.json
+OSキーの下に、カテゴリ内のリンク元とリンク先一覧を定義する。
+WindowsのOSキーは `win32`。
 
-linux:
-    .bashrc:
-        - ~/.bashrc
-    settings.json:
-        - ~/.config/Code/User/settings.json
+```toml
+[darwin]
+"settings.json" = ["~/Library/Application Support/Code/User/settings.json"]
+
+[linux]
+"settings.json" = ["~/.config/Code/User/settings.json"]
+
+[win32]
+"settings.json" = ["~/AppData/Roaming/Code/User/settings.json"]
 ```
 
-## コンフリクト解消
+既存のリンク先は `.bak.<timestamp>` に退避する。Windowsでsymlink作成に失敗する場合は、開発者モードを有効化する。
 
-同期時に分岐（divergence）を検知すると、ローカルの変更を `conflict/<hostname>/<timestamp>` ブランチに退避し、main をリモートに合わせる。
+## コンフリクト
 
-解消手順:
-
-```bash
-cd ~/dotfiles
-git log --oneline --graph --all     # 状態を確認
-git cherry-pick <commit>            # 必要な変更を取り込む
-git branch -d conflict/...          # 退避ブランチを削除
-```
+pull時にローカルとリモートが分岐していた場合、ローカル側を
+`conflict/<hostname>/<timestamp>` ブランチへ退避し、既定ブランチをリモートへ戻す。
+未解決状態では `.conflict-pending` が作成され、`dotfile status` が警告を表示する。
 
 ## ライセンス
 

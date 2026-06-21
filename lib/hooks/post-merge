@@ -2,13 +2,13 @@
 # post-merge — git pull / merge の後に走る。
 # symlink を張り直して、新しい設定ファイルを取りこぼさない。
 set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../conf.sh"
 
-if command -v dotfiles >/dev/null 2>&1; then
-    dotfiles link >/dev/null 2>&1 || \
-        echo "[post-merge] dotfiles link failed; run 'dotfiles link' manually."
+if command -v dotfile >/dev/null 2>&1; then
+    if dotfile link >/dev/null 2>&1; then
+        echo "[post-merge] symlink refreshed."
+    else
+        echo "[post-merge] dotfile link failed; run 'dotfile link' manually."
+    fi
 else
-    bash "$DOTFILES_ENGINE_LIB/link.sh" >/dev/null 2>&1 || \
-        echo "[post-merge] link.sh failed; run 'dotfiles link' manually."
+    echo "[post-merge] dotfile command not found; run 'dotfile link' manually."
 fi
-echo "[post-merge] symlink refreshed."

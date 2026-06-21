@@ -3,7 +3,8 @@
 # 1) コンフリクトマーカーが残っているファイルがあれば中止
 # 2) シークレットらしき内容（鍵・トークン）が含まれていれば中止
 set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../conf.sh"
+
+DOTFILES="$(git rev-parse --show-toplevel)"
 cd "$DOTFILES"
 
 fail() { echo "[pre-push] BLOCKED: $1"; exit 1; }

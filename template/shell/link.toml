@@ -1,0 +1,8 @@
+# shell/link.toml — シェル設定のsymlink定義
+#
+# [darwin]
+# ".zshrc" = ["~/.zshrc"]
+# ".bashrc" = ["~/.bashrc"]
+#
+# [linux]
+# ".bashrc" = ["~/.bashrc"]

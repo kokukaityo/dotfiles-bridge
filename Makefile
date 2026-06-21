@@ -1,7 +1,7 @@
 .PHONY: build lint fmt test clean
 
 build:
-	go build -o dist/dotfile ./cmd/dotfile
+	go build -o dist/dotfile ./cmd
 
 lint:
 	golangci-lint run ./...
