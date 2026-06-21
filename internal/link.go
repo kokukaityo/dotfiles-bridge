@@ -18,8 +18,10 @@ import (
 
 // LinkConfig は link.toml の構造: OSキー → ソースファイル名 → ターゲットパスのリスト。
 // 1つのソースに複数ターゲットを指定できる（例: 同じ settings.json を VS Code と Cursor に配置）。
-var linkConfigFile = Setting.Path.LinkConfigFile
-var backupDir = Setting.Path.BackupDir
+var (
+	linkConfigFile = Setting.Path.LinkConfigFile
+	backupDir      = Setting.Path.BackupDir
+)
 
 type LinkConfig map[string]map[string][]string
 

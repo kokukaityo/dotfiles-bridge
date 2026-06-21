@@ -22,12 +22,12 @@ func (a *application) statusCommand() *cobra.Command {
 	}
 }
 
-// deleteCategoryCommand は auto カテゴリをまるごと削除する。
+// deleteCategoryCommand はカテゴリをまるごと削除する。
 // sync.toml の更新・ファイル削除・Git 履歴の整理・push までを1コミットで行う。
 func (a *application) deleteCategoryCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete-category <name>",
-		Short: "自動同期カテゴリを削除",
+		Short: "カテゴリを削除",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config, err := a.config()

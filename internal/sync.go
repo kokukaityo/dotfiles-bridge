@@ -316,7 +316,9 @@ func generateCommitMsg(git GitRunner, paths []string) (string, error) {
 	return strings.Join(parts, "; "), nil
 }
 
-// DeleteCategory は auto カテゴリを sync.toml・ファイルシステム・Git 履歴から一括削除する。
+// DeleteCategory はカテゴリを sync.toml・ファイルシステム・Git 履歴から一括削除する。
+// auto/manual/ignore いずれの種別でも動作し、どの配列にも属さないカテゴリも
+// ディレクトリが存在すれば削除できる。
 // sync.toml 更新 + カテゴリ削除 + push を1コミットにまとめるトランザクション的な処理。
 // デフォルトブランチ以外や sync.toml に未コミット変更がある場合は拒否する。
 func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) error {
@@ -331,36 +333,89 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if currentBranch != config.Sync.DefaultBranch {
 		return fmt.Errorf("カテゴリ削除は%sブランチでのみ実行できます (current: %s)", config.Sync.DefaultBranch, currentBranch)
 	}
-	if !slices.Contains(config.Sync.Auto, category) {
-		return fmt.Errorf("自動同期カテゴリではありません: %s", category)
+
+	inAuto := slices.Contains(config.Sync.Auto, category)
+	inManual := slices.Contains(config.Sync.Manual, category)
+	inIgnore := slices.Contains(config.Sync.Ignore, category)
+	inConfig := inAuto || inManual || inIgnore
+
+	if !inConfig {
+		if _, err := os.Stat(RepositoryPath(config, category)); os.IsNotExist(err) {
+			return fmt.Errorf("カテゴリが見つかりません: %s", category)
+		}
 	}
-	if !git.Success("diff", "--quiet", "--", syncConfigFile) ||
-		!git.Success("diff", "--cached", "--quiet", "--", syncConfigFile) {
-		return fmt.Errorf("%sに未コミットの変更があります", syncConfigFile)
+	if inConfig {
+		if !git.Success("diff", "--quiet", "--", syncConfigFile) ||
+			!git.Success("diff", "--cached", "--quiet", "--", syncConfigFile) {
+			return fmt.Errorf("%sに未コミットの変更があります", syncConfigFile)
+		}
 	}
 
 	hadTracked := trackedCategory(git, category)
-	config.Sync.Auto = slices.DeleteFunc(config.Sync.Auto, func(s string) bool { return s == category })
-	if err := writeSyncConfig(RepositoryPath(config, syncConfigFile), config.Sync); err != nil {
-		return err
+
+	if inAuto {
+		config.Sync.Auto = slices.DeleteFunc(config.Sync.Auto, func(s string) bool { return s == category })
+	} else if inManual {
+		config.Sync.Manual = slices.DeleteFunc(config.Sync.Manual, func(s string) bool { return s == category })
+	} else if inIgnore {
+		config.Sync.Ignore = slices.DeleteFunc(config.Sync.Ignore, func(s string) bool { return s == category })
 	}
+	if inConfig {
+		if err := writeSyncConfig(RepositoryPath(config, syncConfigFile), config.Sync); err != nil {
+			return err
+		}
+	}
+	if inIgnore {
+		if err := GenerateGitignore(config); err != nil {
+			return err
+		}
+	}
+
 	if err := git.Run("reset", "-q", "HEAD", "--", category); err != nil && hadTracked {
 		return err
 	}
 	if err := os.RemoveAll(RepositoryPath(config, category)); err != nil {
 		return fmt.Errorf("カテゴリを削除できません: %w", err)
 	}
-	if err := git.Run("add", "--", syncConfigFile); err != nil {
-		return err
+
+	var commitPaths []string
+	if inConfig {
+		if err := git.Run("add", "--", syncConfigFile); err != nil {
+			return err
+		}
+		commitPaths = append(commitPaths, syncConfigFile)
 	}
-	commitPaths := []string{syncConfigFile}
+	if inIgnore {
+		if err := git.Run("add", "--", ".gitignore"); err != nil {
+			return err
+		}
+		commitPaths = append(commitPaths, ".gitignore")
+	}
 	if hadTracked {
 		if err := git.Run("add", "-A", "--", category); err != nil {
 			return err
 		}
 		commitPaths = append(commitPaths, category)
 	}
-	args := []string{"commit", "--only", "-m", "delete: category " + category, "--"}
+
+	if len(commitPaths) == 0 {
+		_, _ = fmt.Fprintf(stdout, "[sync] カテゴリを削除しました: %s\n", category)
+		return nil
+	}
+
+	var commitMsg string
+	switch {
+	case inAuto:
+		commitMsg = "delete: auto category " + category
+	case inManual:
+		commitMsg = "delete: manual category " + category
+	case inIgnore:
+		commitMsg = "delete: ignore category " + category
+	default:
+		commitMsg = "delete: category " + category
+	}
+
+	args := []string{"commit", "--only", "-m", commitMsg, "--"}
 	args = append(args, commitPaths...)
 	if err := git.Run(args...); err != nil {
 		return err

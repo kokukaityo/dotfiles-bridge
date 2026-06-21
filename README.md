@@ -10,9 +10,9 @@
 
 ## 前提条件
 
-| 環境    | 要件                                                           |
-| ------- | -------------------------------------------------------------- |
-| 共通    | Go 1.26以降、Git 2.x                                          |
+| 環境    | 要件                                                                |
+| ------- | ------------------------------------------------------------------- |
+| 共通    | Go 1.26以降、Git 2.x                                                |
 | Windows | 開発者モードの有効化（symlink作成に必要。設定→システム→開発者向け） |
 
 ## ビルド
@@ -59,7 +59,7 @@ command -v dotfile >/dev/null && dotfile status
 | `dotfile link`                   | OSに応じたsymlinkを配置                       |
 | `dotfile pull`                   | リモートから同期                              |
 | `dotfile push`                   | autoカテゴリの変更をcommitしてpush            |
-| `dotfile delete-category <name>` | autoカテゴリを設定とGit履歴から削除           |
+| `dotfile delete-category <name>` | カテゴリを設定とGit履歴から削除               |
 | `dotfile gitignore`              | `.gitignore` の自動生成部分を更新             |
 | `dotfile status`                 | コンフリクト退避状態を表示                    |
 | `dotfile version`                | バージョン情報を表示                          |
