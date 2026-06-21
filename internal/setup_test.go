@@ -30,7 +30,8 @@ func TestInitializeRepository(t *testing.T) {
 	target := filepath.Join(t.TempDir(), "repository")
 	var stdout bytes.Buffer
 
-	if err := InitializeRepository(target, templateFS, "1.0.0", hookFS, &stdout); err != nil {
+	EngineVersion = "1.0.0"
+	if err := InitializeRepository(target, templateFS, hookFS, &stdout); err != nil {
 		t.Fatal(err)
 	}
 	if branch := runGit(t, target, "branch", "--show-current"); branch != "develop" {
