@@ -18,7 +18,6 @@ func TestInitializeRepository(t *testing.T) {
 	t.Setenv("GIT_COMMITTER_EMAIL", "dotfile@example.invalid")
 
 	templateFS := fstest.MapFS{
-		Setting.Path.TemplateDir + "/" + Setting.Path.InfraVersionFile: {Data: []byte("1.0.0\n")},
 		Setting.Path.TemplateDir + "/" + Setting.Path.SyncConfigFile: {
 			Data: []byte("default_branch = \"develop\"\nauto = []\nmanual = []\nignore = []\n"),
 		},
