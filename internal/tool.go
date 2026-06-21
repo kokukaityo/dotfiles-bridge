@@ -93,6 +93,20 @@ func sanitizeBranchPart(value string) string {
 	return strings.Trim(replacer.Replace(value), "./")
 }
 
+// OSKey は runtime.GOOS を link.toml のセクションキーに変換する。
+// "windows" → "win32" の変換は、link.toml のキーを
+// Node.js の process.platform に合わせているため。
+func OSKey() (string, error) {
+	switch runtime.GOOS {
+	case "windows":
+		return "win32", nil
+	case "darwin", "linux":
+		return runtime.GOOS, nil
+	default:
+		return "", fmt.Errorf("未対応のOSです: %s", runtime.GOOS)
+	}
+}
+
 // uniqueBaseNames は改行区切りのパス一覧からユニークなファイル名を抽出する。
 func uniqueBaseNames(output string) []string {
 	seen := make(map[string]struct{})
