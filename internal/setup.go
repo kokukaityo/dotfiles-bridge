@@ -44,6 +44,9 @@ func InitializeRepository(target string, templateFS fs.FS, hookFS fs.FS, stdout 
 	if err := extractTemplate(templateFS, target); err != nil {
 		return err
 	}
+	if err := os.WriteFile(filepath.Join(target, infraVersionFile), []byte(EngineVersion+"\n"), 0o644); err != nil {
+		return fmt.Errorf("バージョンファイルを書き出せません: %w", err)
+	}
 
 	config, err := loadConfig(target)
 	if err != nil {
