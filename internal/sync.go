@@ -9,8 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,9 +18,9 @@ import (
 
 // gitignore のマーカー行。この行より上はユーザーの手書き、下は自動生成。
 // GenerateGitignore はマーカー上を保持し、マーカー下だけを再生成する。
-const (
-	gitignoreMarkerStart = "# --- auto-generated from sync.toml (do not edit below) ---"
-	gitignoreMarkerEnd   = "# --- end auto-generated ---"
+var (
+	gitignoreMarkerStart = Setting.Gitignore.MarkerStart
+	gitignoreMarkerEnd   = Setting.Gitignore.MarkerEnd
 )
 
 var categoryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
@@ -43,12 +42,15 @@ func GenerateGitignore(config *Config) error {
 	}
 	output.WriteString(gitignoreMarkerStart + "\n\n")
 	output.WriteString("# Security exclusions\n")
-	output.WriteString("*auth*\n*.key\n*.pem\n.env*\n\n")
+	for _, pattern := range Setting.Gitignore.SecurityPatterns {
+		output.WriteString(pattern + "\n")
+	}
+	output.WriteString("\n")
 	output.WriteString("# Ignored categories (ignore in sync.toml)\n")
 	for _, category := range config.Sync.Ignore {
 		output.WriteString(category + "/\n")
 	}
-	output.WriteString("\n.conflict-pending\n.dotfile-hook/\n")
+	output.WriteString("\n" + Setting.Path.ConflictMarkerFile + "\n" + Setting.Path.HookDir + "/\n")
 	output.WriteString(gitignoreMarkerEnd + "\n")
 
 	if err := os.WriteFile(path, []byte(output.String()), 0o644); err != nil {
@@ -86,7 +88,7 @@ func readManualGitignore(path string) (string, error) {
 // Status は .conflict-pending マーカーの有無を確認し、未解決コンフリクトがあれば警告する。
 // シェル起動時に dotfile status を呼ぶ運用を想定した軽量チェック。
 func Status(config *Config, stdout io.Writer) error {
-	if _, err := os.Stat(RepositoryPath(config, ".conflict-pending")); err == nil {
+	if _, err := os.Stat(RepositoryPath(config, Setting.Path.ConflictMarkerFile)); err == nil {
 		_, _ = fmt.Fprintln(stdout, "")
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "  [dotfile] CONFLICT PENDING")
@@ -172,8 +174,8 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 	if err := git.Run("reset", "--hard", remoteRef); err != nil {
 		return err
 	}
-	if err := os.WriteFile(RepositoryPath(config, ".conflict-pending"), nil, 0o644); err != nil {
-		return fmt.Errorf(".conflict-pendingを作成できません: %w", err)
+	if err := os.WriteFile(RepositoryPath(config, Setting.Path.ConflictMarkerFile), nil, 0o644); err != nil {
+		return fmt.Errorf("%sを作成できません: %w", Setting.Path.ConflictMarkerFile, err)
 	}
 	_, _ = fmt.Fprintf(stdout, "[sync] ローカル変更は%sへ退避し、%sを%sへ戻しました。\n", conflictBranch, config.Sync.DefaultBranch, remoteRef)
 	return nil
@@ -183,7 +185,7 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 // ユーザーが conflict ブランチを全て削除していれば、.conflict-pending マーカーも消す。
 // ブランチがまだ残っていれば何もしない。
 func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer) error {
-	marker := RepositoryPath(config, ".conflict-pending")
+	marker := RepositoryPath(config, Setting.Path.ConflictMarkerFile)
 	if _, err := os.Stat(marker); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -195,18 +197,11 @@ func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer
 	}
 	if branches == "" {
 		if err := os.Remove(marker); err != nil {
-			return fmt.Errorf(".conflict-pendingを削除できません: %w", err)
+			return fmt.Errorf("%sを削除できません: %w", Setting.Path.ConflictMarkerFile, err)
 		}
 		_, _ = fmt.Fprintln(stdout, "[sync] コンフリクト解消を確認し、マーカーを削除しました。")
 	}
 	return nil
-}
-
-// sanitizeBranchPart はホスト名など外部由来の文字列を Git ブランチ名に使える形にする。
-// Git が禁止する文字（スペース, ~, ^, :, ?, *, [, \, ..）をハイフンに置換する。
-func sanitizeBranchPart(value string) string {
-	replacer := strings.NewReplacer(" ", "-", "~", "-", "^", "-", ":", "-", "?", "-", "*", "-", "[", "-", "\\", "-", "..", "-")
-	return strings.Trim(replacer.Replace(value), "./")
 }
 
 // Push は auto カテゴリの変更だけを stage → commit → push する。
@@ -318,23 +313,6 @@ func generateCommitMsg(git GitRunner, paths []string) (string, error) {
 	return strings.Join(parts, "; "), nil
 }
 
-func uniqueBaseNames(output string) []string {
-	seen := make(map[string]struct{})
-	for path := range strings.SplitSeq(output, "\n") {
-		path = strings.TrimSpace(path)
-		if path == "" {
-			continue
-		}
-		seen[filepath.Base(filepath.FromSlash(path))] = struct{}{}
-	}
-	names := make([]string, 0, len(seen))
-	for name := range seen {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
 // DeleteCategory は auto カテゴリを sync.toml・ファイルシステム・Git 履歴から一括削除する。
 // sync.toml 更新 + カテゴリ削除 + push を1コミットにまとめるトランザクション的な処理。
 // デフォルトブランチ以外や sync.toml に未コミット変更がある場合は拒否する。
@@ -350,17 +328,17 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if currentBranch != config.Sync.DefaultBranch {
 		return fmt.Errorf("カテゴリ削除は%sブランチでのみ実行できます (current: %s)", config.Sync.DefaultBranch, currentBranch)
 	}
-	if !contains(config.Sync.Auto, category) {
+	if !slices.Contains(config.Sync.Auto, category) {
 		return fmt.Errorf("自動同期カテゴリではありません: %s", category)
 	}
-	if !git.Success("diff", "--quiet", "--", "sync.toml") ||
-		!git.Success("diff", "--cached", "--quiet", "--", "sync.toml") {
-		return fmt.Errorf("sync.tomlに未コミットの変更があります")
+	if !git.Success("diff", "--quiet", "--", Setting.Path.SyncConfigFile) ||
+		!git.Success("diff", "--cached", "--quiet", "--", Setting.Path.SyncConfigFile) {
+		return fmt.Errorf("%sに未コミットの変更があります", Setting.Path.SyncConfigFile)
 	}
 
 	hadTracked := trackedCategory(git, category)
-	config.Sync.Auto = without(config.Sync.Auto, category)
-	if err := writeSyncConfig(RepositoryPath(config, "sync.toml"), config.Sync); err != nil {
+	config.Sync.Auto = slices.DeleteFunc(config.Sync.Auto, func(s string) bool { return s == category })
+	if err := writeSyncConfig(RepositoryPath(config, Setting.Path.SyncConfigFile), config.Sync); err != nil {
 		return err
 	}
 	if err := git.Run("reset", "-q", "HEAD", "--", category); err != nil && hadTracked {
@@ -369,10 +347,10 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if err := os.RemoveAll(RepositoryPath(config, category)); err != nil {
 		return fmt.Errorf("カテゴリを削除できません: %w", err)
 	}
-	if err := git.Run("add", "--", "sync.toml"); err != nil {
+	if err := git.Run("add", "--", Setting.Path.SyncConfigFile); err != nil {
 		return err
 	}
-	commitPaths := []string{"sync.toml"}
+	commitPaths := []string{Setting.Path.SyncConfigFile}
 	if hadTracked {
 		if err := git.Run("add", "-A", "--", category); err != nil {
 			return err
@@ -421,50 +399,3 @@ func writeSyncConfig(path string, config SyncConfig) error {
 	return nil
 }
 
-// replaceFile は OS ごとのアトミックなファイル置換。
-// Unix は rename で上書きできるが、Windows は既存ファイルがあると rename が失敗するため、
-// 退避 → 置換 → 退避削除のフォールバックを行う。置換失敗時は退避から復元する。
-func replaceFile(destination, source string) error {
-	if runtime.GOOS != "windows" {
-		if err := os.Rename(source, destination); err != nil {
-			return fmt.Errorf("sync.tomlを置換できません: %w", err)
-		}
-		return nil
-	}
-
-	backup := destination + ".backup"
-	_ = os.Remove(backup)
-	if err := os.Rename(destination, backup); err != nil {
-		return fmt.Errorf("既存のsync.tomlを退避できません: %w", err)
-	}
-	if err := os.Rename(source, destination); err != nil {
-		restoreErr := os.Rename(backup, destination)
-		if restoreErr != nil {
-			return fmt.Errorf("sync.tomlの置換に失敗し、復元にも失敗しました: replace=%v restore=%w", err, restoreErr)
-		}
-		return fmt.Errorf("sync.tomlを置換できません: %w", err)
-	}
-	if err := os.Remove(backup); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("sync.tomlの退避ファイルを削除できません: %w", err)
-	}
-	return nil
-}
-
-func contains(items []string, expected string) bool {
-	for _, item := range items {
-		if item == expected {
-			return true
-		}
-	}
-	return false
-}
-
-func without(items []string, removed string) []string {
-	result := make([]string, 0, len(items))
-	for _, item := range items {
-		if item != removed {
-			result = append(result, item)
-		}
-	}
-	return result
-}

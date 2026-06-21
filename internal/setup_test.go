@@ -18,14 +18,14 @@ func TestInitializeRepository(t *testing.T) {
 	t.Setenv("GIT_COMMITTER_EMAIL", "dotfile@example.invalid")
 
 	templateFS := fstest.MapFS{
-		"template/.infra-version": {Data: []byte("1.0.0\n")},
-		"template/sync.toml": {
+		Setting.Path.TemplateDir + "/" + Setting.Path.InfraVersionFile: {Data: []byte("1.0.0\n")},
+		Setting.Path.TemplateDir + "/" + Setting.Path.SyncConfigFile: {
 			Data: []byte("default_branch = \"develop\"\nauto = []\nmanual = []\nignore = []\n"),
 		},
 	}
-	hookFS := fstest.MapFS{
-		"internal/hook/pre-push":   {Data: []byte("#!/usr/bin/env bash\nexit 0\n")},
-		"internal/hook/post-merge": {Data: []byte("#!/usr/bin/env bash\nexit 0\n")},
+	hookFS := make(fstest.MapFS)
+	for _, source := range Setting.Hook.Sources {
+		hookFS[source] = &fstest.MapFile{Data: []byte("#!/usr/bin/env bash\nexit 0\n")}
 	}
 	target := filepath.Join(t.TempDir(), "repository")
 	var stdout bytes.Buffer
@@ -39,11 +39,12 @@ func TestInitializeRepository(t *testing.T) {
 	if status := runGit(t, target, "status", "--porcelain"); status != "" {
 		t.Fatalf("worktree is dirty:\n%s", status)
 	}
-	if ignored := runGit(t, target, "check-ignore", ".dotfile-hook/pre-push"); ignored != ".dotfile-hook/pre-push" {
+	hookCheckPath := Setting.Path.HookDir + "/pre-push"
+	if ignored := runGit(t, target, "check-ignore", hookCheckPath); ignored != hookCheckPath {
 		t.Fatalf("hook is not ignored: %q", ignored)
 	}
 	if runtime.GOOS != "windows" {
-		info, err := fs.Stat(os.DirFS(target), ".dotfile-hook/pre-push")
+		info, err := fs.Stat(os.DirFS(target), Setting.Path.HookDir+"/pre-push")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -36,7 +36,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 		return err
 	}
 
-	matches, err := filepath.Glob(filepath.Join(config.DotfilesDir, "*", "link.toml"))
+	matches, err := filepath.Glob(filepath.Join(config.DotfilesDir, "*", Setting.Path.LinkConfigFile))
 	if err != nil {
 		return fmt.Errorf("link.tomlの検索に失敗しました: %w", err)
 	}
@@ -75,7 +75,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 				return fmt.Errorf("リンク元を解決できません: %w", err)
 			}
 			for _, target := range entries[source] {
-				targetPath, err := ExpandHome(strings.TrimSuffix(target, "/"))
+				targetPath, err := ExpandPath(strings.TrimSuffix(target, "/"))
 				if err != nil {
 					return err
 				}

@@ -1,9 +1,11 @@
-// config.go はデータリポジトリの探索と設定の読み込みを担当する。
+// conf.go はエンジンの設定を担当する。
+// 内部設定値を conf.toml から読み込み、データリポジトリの探索と設定の読み込みを行う。
 // cmd/ 層の各サブコマンドは Resolve() を経由してここから Config を受け取り、
 // 以降のロジック（sync, link, setup）に渡す。
 package engine
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,10 +14,57 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const (
-	defaultDirName = "dotfiles"
-	DefaultDir     = "~/" + defaultDirName
-)
+// --- エンジン内部設定（conf.toml） ---
+
+//go:embed conf.toml
+var settingData string
+
+var Setting = mustParseSetting(settingData)
+
+func mustParseSetting(data string) EngineSetting {
+	var s EngineSetting
+	if _, err := toml.Decode(data, &s); err != nil {
+		panic("conf.toml: " + err.Error())
+	}
+	return s
+}
+
+type EngineSetting struct {
+	Path      PathSetting      `toml:"path"`
+	Git       GitSetting       `toml:"git"`
+	Hook      HookSetting      `toml:"hook"`
+	Gitignore GitignoreSetting `toml:"gitignore"`
+}
+
+type PathSetting struct {
+	DefaultDir         string `toml:"default_dir"`
+	TemplateDir        string `toml:"template_dir"`
+	HookDir            string `toml:"hook_dir"`
+	InfraVersionFile   string `toml:"infra_version_file"`
+	SyncConfigFile     string `toml:"sync_config_file"`
+	LinkConfigFile     string `toml:"link_config_file"`
+	ConflictMarkerFile string `toml:"conflict_marker_file"`
+}
+
+type GitSetting struct {
+	HooksPath         string `toml:"hooks_path"`
+	Symlinks          string `toml:"symlinks"`
+	GitattributesLine string `toml:"gitattributes_line"`
+}
+
+type HookSetting struct {
+	Sources []string `toml:"sources"`
+}
+
+type GitignoreSetting struct {
+	MarkerStart      string   `toml:"marker_start"`
+	MarkerEnd        string   `toml:"marker_end"`
+	SecurityPatterns []string `toml:"security_patterns"`
+}
+
+// --- ランタイム設定（データリポジトリ） ---
+
+var DefaultDir = "~/" + Setting.Path.DefaultDir
 
 // SyncConfig は sync.toml をそのまま構造体にしたもの。
 // カテゴリの同期モード（auto/manual/ignore）とブランチ設定を保持する。
@@ -68,7 +117,7 @@ func resolveDotfilesDir() (string, error) {
 
 	home, err := os.UserHomeDir()
 	if err == nil {
-		dir := filepath.Join(home, defaultDirName)
+		dir := filepath.Join(home, Setting.Path.DefaultDir)
 		if isDataRepository(dir) {
 			return dir, nil
 		}
@@ -80,24 +129,24 @@ func resolveDotfilesDir() (string, error) {
 // isDataRepository は .infra-version ファイルの存在でデータリポジトリかどうかを判定する。
 // ただの Git リポジトリと区別するためのマーカー。ディレクトリの場合は false。
 func isDataRepository(dir string) bool {
-	info, err := os.Stat(filepath.Join(dir, ".infra-version"))
+	info, err := os.Stat(filepath.Join(dir, Setting.Path.InfraVersionFile))
 	return err == nil && !info.IsDir()
 }
 
 // loadConfig は確定済みのディレクトリから sync.toml と .infra-version を読み、
 // エンジンバージョンと合わせて Config を組み立てる。
 func loadConfig(dir, engineVersion string) (*Config, error) {
-	syncConfig, err := loadSyncConfig(filepath.Join(dir, "sync.toml"))
+	syncConfig, err := loadSyncConfig(filepath.Join(dir, Setting.Path.SyncConfigFile))
 	if err != nil {
-		return nil, fmt.Errorf("sync.tomlを読み込めません: %w", err)
+		return nil, fmt.Errorf("%sを読み込めません: %w", Setting.Path.SyncConfigFile, err)
 	}
 	if err := validateDefaultBranch(dir, syncConfig.DefaultBranch); err != nil {
 		return nil, err
 	}
 
-	versionBytes, err := os.ReadFile(filepath.Join(dir, ".infra-version"))
+	versionBytes, err := os.ReadFile(filepath.Join(dir, Setting.Path.InfraVersionFile))
 	if err != nil {
-		return nil, fmt.Errorf(".infra-versionを読み込めません: %w", err)
+		return nil, fmt.Errorf("%sを読み込めません: %w", Setting.Path.InfraVersionFile, err)
 	}
 
 	config := &Config{

@@ -4,13 +4,11 @@
 package engine
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const hookFileMode fs.FileMode = 0o755
@@ -19,7 +17,7 @@ const hookFileMode fs.FileMode = 0o755
 // テンプレート展開 → git init → SetupRepository → add + commit まで一括で行う。
 // 対象パスが既に存在する場合はエラーにして上書きを防ぐ。
 func InitializeRepository(target string, templateFS fs.FS, engineVersion string, hookFS fs.FS, stdout io.Writer) error {
-	target, err := ExpandHome(target)
+	target, err := ExpandPath(target)
 	if err != nil {
 		return err
 	}
@@ -63,11 +61,11 @@ func InitializeRepository(target string, templateFS fs.FS, engineVersion string,
 // extractTemplate は埋め込みテンプレート（embed.go の TemplateFS）をディスクに展開する。
 // template/ 配下のディレクトリ構造をそのまま再現する。
 func extractTemplate(templateFS fs.FS, target string) error {
-	return fs.WalkDir(templateFS, "template", func(path string, entry fs.DirEntry, walkErr error) error {
+	return fs.WalkDir(templateFS, Setting.Path.TemplateDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		relative, err := filepath.Rel("template", path)
+		relative, err := filepath.Rel(Setting.Path.TemplateDir, path)
 		if err != nil {
 			return fmt.Errorf("テンプレートパスを解決できません: %w", err)
 		}
@@ -96,13 +94,13 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 	if err := installHooks(config.DotfilesDir, hookFS); err != nil {
 		return err
 	}
-	if err := git.Run("config", "core.hooksPath", ".dotfile-hook"); err != nil {
+	if err := git.Run("config", Setting.Git.HooksPath, Setting.Path.HookDir); err != nil {
 		return err
 	}
-	if err := ensureLine(filepath.Join(config.DotfilesDir, ".gitattributes"), "* -text"); err != nil {
+	if err := ensureLine(filepath.Join(config.DotfilesDir, ".gitattributes"), Setting.Git.GitattributesLine); err != nil {
 		return err
 	}
-	if err := git.Run("config", "core.symlinks", "true"); err != nil {
+	if err := git.Run("config", Setting.Git.Symlinks, "true"); err != nil {
 		return err
 	}
 	if err := GenerateGitignore(config); err != nil {
@@ -119,11 +117,11 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 // .git/hooks/ ではなく core.hooksPath で参照させることで、
 // データリポジトリ側に hook を置きつつ Git 追跡対象外にできる。
 func installHooks(dotfilesDir string, hookFS fs.FS) error {
-	hookDir := filepath.Join(dotfilesDir, ".dotfile-hook")
+	hookDir := filepath.Join(dotfilesDir, Setting.Path.HookDir)
 	if err := os.MkdirAll(hookDir, 0o755); err != nil {
 		return fmt.Errorf("hookディレクトリを作成できません: %w", err)
 	}
-	for _, source := range []string{"internal/hook/pre-push", "internal/hook/post-merge"} {
+	for _, source := range Setting.Hook.Sources {
 		data, err := fs.ReadFile(hookFS, source)
 		if err != nil {
 			return fmt.Errorf("hookを読み込めません (%s): %w", source, err)
@@ -135,41 +133,6 @@ func installHooks(dotfilesDir string, hookFS fs.FS) error {
 		if err := os.Chmod(target, hookFileMode); err != nil {
 			return fmt.Errorf("hookの権限を設定できません (%s): %w", target, err)
 		}
-	}
-	return nil
-}
-
-// ensureLine は冪等な「ファイルにこの行がなければ追記」ヘルパー。
-// .gitattributes の "* -text"（改行コード自動変換の無効化）に使っている。
-// 何度呼んでも重複行が増えない。
-func ensureLine(path, expected string) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
-	if err != nil {
-		return fmt.Errorf("%sを開けません: %w", path, err)
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if strings.TrimSpace(scanner.Text()) == expected {
-			return nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("%sを読み込めません: %w", path, err)
-	}
-	info, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	prefix := ""
-	if info.Size() > 0 {
-		prefix = "\n"
-	}
-	if _, err := file.WriteString(prefix + expected + "\n"); err != nil {
-		return fmt.Errorf("%sを更新できません: %w", path, err)
 	}
 	return nil
 }
