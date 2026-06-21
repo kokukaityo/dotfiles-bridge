@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# .infra/link.sh — 各カテゴリの link.yaml を読み、OS に応じた symlink を配置する。
+# lib/link.sh — 各カテゴリの link.yaml を読み、OS に応じた symlink を配置する。
 set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/conf.sh"
@@ -29,7 +29,6 @@ link() {
 }
 
 # parse_link_yaml <link.yaml path> <os_key>
-# link.yaml を解析し、指定 OS のエントリを "source_key\ttarget" 形式で出力する。
 parse_link_yaml() {
     local yaml_file="$1"
     local os_key="$2"
@@ -37,7 +36,6 @@ parse_link_yaml() {
     local current_source=""
 
     while IFS= read -r line || [ -n "$line" ]; do
-        # 空行 → セクション区切り
         if [[ -z "$line" || "$line" =~ ^[[:space:]]*$ ]]; then
             if [ "$state" = "in_os" ] || [ "$state" = "in_source" ]; then
                 state="outside"
@@ -45,10 +43,8 @@ parse_link_yaml() {
             continue
         fi
 
-        # コメント行
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-        # トップレベルキー（インデントなし）
         if [[ "$line" =~ ^[a-zA-Z_] ]]; then
             local key="${line%%:*}"
             if [ "$key" = "$os_key" ]; then
@@ -61,13 +57,11 @@ parse_link_yaml() {
 
         case "$state" in
             in_os|in_source)
-                # ソースキー（4スペースインデント）
                 if [[ "$line" =~ ^[[:space:]]{4}[a-zA-Z_] ]]; then
                     current_source="$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/:$//')"
                     state="in_source"
                     continue
                 fi
-                # ターゲット（8スペースインデント、リストアイテム）
                 if [[ "$line" =~ ^[[:space:]]{8}-[[:space:]] ]]; then
                     local target
                     target="$(echo "$line" | sed 's/^[[:space:]]*-[[:space:]]*//')"
@@ -93,7 +87,6 @@ process_category() {
         return
     fi
 
-    # yaml に実エントリがあるか確認（コメントのみのファイルをスキップ）
     if ! grep -qE '^[a-zA-Z]' "$yaml_file" 2>/dev/null; then
         return
     fi
@@ -103,10 +96,8 @@ process_category() {
     while IFS=$'\t' read -r source_key target; do
         [ -z "$source_key" ] && continue
 
-        # ソースの実パスを解決
         local src_path="${category_dir}/${source_key%/}"
 
-        # ターゲットの ~ を $HOME に展開
         target="${target/#\~/$HOME}"
         target="${target%/}"
 
@@ -134,7 +125,7 @@ main() {
     echo "=== dotfiles link ($os_key) ==="
     echo ""
 
-    for yaml in "$DOTFILE"/*/link.yaml; do
+    for yaml in "$DOTFILES"/*/link.yaml; do
         [ -f "$yaml" ] || continue
         process_category "$(dirname "$yaml")" "$os_key"
     done
