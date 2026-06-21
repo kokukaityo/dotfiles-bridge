@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/dotfile — dotfile エンジンのエントリポイント
+# bin/dotfiles — dotfiles エンジンのエントリポイント
 set -euo pipefail
 
 # macOS の readlink -f 非対応を考慮したシンボリックリンク解決
@@ -14,41 +14,41 @@ resolve_path() {
     echo "$(cd "$(dirname "$target")" && pwd)"
 }
 
-DOTFILE_ENGINE_DIR="$(cd "$(resolve_path "${BASH_SOURCE[0]}")/.." && pwd)"
-export DOTFILE_ENGINE_DIR
-export DOTFILE_ENGINE_LIB="${DOTFILE_ENGINE_DIR}/lib"
+DOTFILES_ENGINE_DIR="$(cd "$(resolve_path "${BASH_SOURCE[0]}")/.." && pwd)"
+export DOTFILES_ENGINE_DIR
+export DOTFILES_ENGINE_LIB="${DOTFILES_ENGINE_DIR}/lib"
 
-VERSION="$(cat "$DOTFILE_ENGINE_DIR/VERSION" 2>/dev/null || echo "dev")"
+VERSION="$(cat "$DOTFILES_ENGINE_DIR/VERSION" 2>/dev/null || echo "dev")"
 
 # --- init（conf.sh 不要で動く必要がある） ---
 
 cmd_init() {
-    local target_dir="${1:-$HOME/dotfile}"
-    local template_dir="$DOTFILE_ENGINE_DIR/template"
+    local target_dir="${1:-$HOME/dotfiles}"
+    local template_dir="$DOTFILES_ENGINE_DIR/template"
 
     if [ ! -d "$template_dir" ]; then
-        echo "[dotfile] Error: テンプレートが見つかりません: $template_dir" >&2
+        echo "[dotfiles] Error: テンプレートが見つかりません: $template_dir" >&2
         exit 1
     fi
 
     if [ -e "$target_dir" ]; then
-        echo "[dotfile] Error: 既にディレクトリが存在します: $target_dir" >&2
+        echo "[dotfiles] Error: 既にディレクトリが存在します: $target_dir" >&2
         echo "  別のパスを指定するか、既存のディレクトリを削除してください。" >&2
         exit 1
     fi
 
-    echo "[dotfile] データリポジトリを作成: $target_dir"
+    echo "[dotfiles] データリポジトリを作成: $target_dir"
     cp -r "$template_dir" "$target_dir"
 
     cd "$target_dir"
     git init
     git add -A
-    git commit -m "feat: initial dotfile setup"
+    git commit -m "feat: initial dotfiles setup"
 
     echo ""
-    echo "[dotfile] 初期設定を実行中..."
-    export DOTFILE_DIR="$target_dir"
-    source "$DOTFILE_ENGINE_LIB/conf.sh"
+    echo "[dotfiles] 初期設定を実行中..."
+    export DOTFILES_DIR="$target_dir"
+    source "$DOTFILES_ENGINE_LIB/conf.sh"
     cmd_setup
 
     echo ""
@@ -62,28 +62,28 @@ cmd_init() {
     echo "     git push -u origin main"
     echo ""
     echo "  3. ~/.bashrc or ~/.zshrc に自動同期を設定:"
-    echo "     export DOTFILE_DIR=\"$target_dir\""
-    echo "     command -v dotfile >/dev/null && dotfile pull"
-    echo "     command -v dotfile >/dev/null && dotfile status"
+    echo "     export DOTFILES_DIR=\"$target_dir\""
+    echo "     command -v dotfiles >/dev/null && dotfiles pull"
+    echo "     command -v dotfiles >/dev/null && dotfiles status"
 }
 
 # --- setup（現 setup.sh の内容） ---
 
 cmd_setup() {
     # conf.sh がまだ source されていない場合（init 経由以外での直接呼び出し）
-    if [ -z "${DOTFILE:-}" ]; then
-        source "$DOTFILE_ENGINE_LIB/conf.sh"
+    if [ -z "${DOTFILES:-}" ]; then
+        source "$DOTFILES_ENGINE_LIB/conf.sh"
     fi
 
-    cd "$DOTFILE"
+    cd "$DOTFILES"
 
-    echo "=== dotfile setup ==="
+    echo "=== dotfiles setup ==="
     echo ""
 
     # 1. Git hook
-    git config core.hooksPath "${DOTFILE_ENGINE_LIB}/hook"
-    chmod +x "${DOTFILE_ENGINE_LIB}/hook/"* 2>/dev/null || true
-    echo "[setup] Git hook configured (core.hooksPath=${DOTFILE_ENGINE_LIB}/hook)"
+    git config core.hooksPath "${DOTFILES_ENGINE_LIB}/hooks"
+    chmod +x "${DOTFILES_ENGINE_LIB}/hooks/"* 2>/dev/null || true
+    echo "[setup] Git hooks configured (core.hooksPath=${DOTFILES_ENGINE_LIB}/hooks)"
 
     # 2. symlink をそのまま保存する設定
     if ! grep -q '^\* -text' .gitattributes 2>/dev/null; then
@@ -93,29 +93,29 @@ cmd_setup() {
     echo "[setup] .gitattributes configured for symlink"
 
     # 3. .gitignore 生成
-    bash "$DOTFILE_ENGINE_LIB/sync.sh" gitignore
+    bash "$DOTFILES_ENGINE_LIB/sync.sh" gitignore
 
     # 4. symlink 配置
-    bash "$DOTFILE_ENGINE_LIB/link.sh"
+    bash "$DOTFILES_ENGINE_LIB/link.sh"
 
     echo ""
     echo "=== Setup complete ==="
     echo ""
     echo "シェル起動時の自動同期を設定する場合、~/.bashrc or ~/.zshrc に以下を追加:"
-    echo "  export DOTFILE_DIR=\"$DOTFILE\""
-    echo "  command -v dotfile >/dev/null && dotfile pull"
-    echo "  command -v dotfile >/dev/null && dotfile status"
+    echo "  export DOTFILES_DIR=\"$DOTFILES\""
+    echo "  command -v dotfiles >/dev/null && dotfiles pull"
+    echo "  command -v dotfiles >/dev/null && dotfiles status"
 }
 
 # --- version ---
 
 cmd_version() {
-    echo "dotfile engine v${VERSION}"
-    echo "  engine: ${DOTFILE_ENGINE_DIR}"
-    if [ -n "${DOTFILE:-}" ]; then
-        echo "  data:   ${DOTFILE}"
-        if [ -f "$DOTFILE/.infra-version" ]; then
-            echo "  data version: $(cat "$DOTFILE/.infra-version")"
+    echo "dotfiles engine v${VERSION}"
+    echo "  engine: ${DOTFILES_ENGINE_DIR}"
+    if [ -n "${DOTFILES:-}" ]; then
+        echo "  data:   ${DOTFILES}"
+        if [ -f "$DOTFILES/.infra-version" ]; then
+            echo "  data version: $(cat "$DOTFILES/.infra-version")"
         fi
     fi
 }
@@ -124,12 +124,12 @@ cmd_version() {
 
 usage() {
     cat <<EOF
-dotfile v${VERSION} — dotfile 同期エンジン
+dotfiles v${VERSION} — dotfiles 同期エンジン
 
-Usage: dotfile <command> [option]
+Usage: dotfiles <command> [option]
 
 Command:
-  init [path]        データリポジトリを新規作成（デフォルト: ~/dotfile）
+  init [path]        データリポジトリを新規作成（デフォルト: ~/dotfiles）
   setup              データリポジトリの初期設定
   link               symlink を配置
   pull               リモートから同期
@@ -151,30 +151,30 @@ case "${1:-help}" in
         cmd_init "$@"
         ;;
     setup)
-        source "$DOTFILE_ENGINE_LIB/conf.sh"
+        source "$DOTFILES_ENGINE_LIB/conf.sh"
         cmd_setup
         ;;
     link)
-        bash "$DOTFILE_ENGINE_LIB/link.sh"
+        bash "$DOTFILES_ENGINE_LIB/link.sh"
         ;;
     pull)
-        bash "$DOTFILE_ENGINE_LIB/sync.sh" pull
+        bash "$DOTFILES_ENGINE_LIB/sync.sh" pull
         ;;
     push)
-        bash "$DOTFILE_ENGINE_LIB/sync.sh" push
+        bash "$DOTFILES_ENGINE_LIB/sync.sh" push
         ;;
     delete-category)
         shift
-        bash "$DOTFILE_ENGINE_LIB/sync.sh" delete-category "$@"
+        bash "$DOTFILES_ENGINE_LIB/sync.sh" delete-category "$@"
         ;;
     gitignore)
-        bash "$DOTFILE_ENGINE_LIB/sync.sh" gitignore
+        bash "$DOTFILES_ENGINE_LIB/sync.sh" gitignore
         ;;
     status)
-        bash "$DOTFILE_ENGINE_LIB/sync.sh" status
+        bash "$DOTFILES_ENGINE_LIB/sync.sh" status
         ;;
     version|--version|-v)
-        source "$DOTFILE_ENGINE_LIB/conf.sh" 2>/dev/null || true
+        source "$DOTFILES_ENGINE_LIB/conf.sh" 2>/dev/null || true
         cmd_version
         ;;
     help|--help|-h)

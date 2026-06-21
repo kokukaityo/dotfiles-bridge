@@ -2,14 +2,14 @@
 # lib/conf.sh — エンジン共通設定ローダー。source して使う。
 
 # エンジン自身のパス（ランチャーから export されていなければ BASH_SOURCE から導出）
-if [ -z "${DOTFILE_ENGINE_LIB:-}" ]; then
-    DOTFILE_ENGINE_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    DOTFILE_ENGINE_DIR="$(dirname "$DOTFILE_ENGINE_LIB")"
+if [ -z "${DOTFILES_ENGINE_LIB:-}" ]; then
+    DOTFILES_ENGINE_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    DOTFILES_ENGINE_DIR="$(dirname "$DOTFILES_ENGINE_LIB")"
 fi
 
-resolve_dotfile_dir() {
-    if [ -n "${DOTFILE_DIR:-}" ] && [ -d "$DOTFILE_DIR" ]; then
-        echo "$DOTFILE_DIR"
+resolve_dotfiles_dir() {
+    if [ -n "${DOTFILES_DIR:-}" ] && [ -d "$DOTFILES_DIR" ]; then
+        echo "$DOTFILES_DIR"
         return
     fi
 
@@ -20,21 +20,21 @@ resolve_dotfile_dir() {
         return
     fi
 
-    if [ -d "$HOME/dotfile" ] && [ -f "$HOME/dotfile/.infra-version" ]; then
-        echo "$HOME/dotfile"
+    if [ -d "$HOME/dotfiles" ] && [ -f "$HOME/dotfiles/.infra-version" ]; then
+        echo "$HOME/dotfiles"
         return
     fi
 
-    echo "[dotfile] Error: データリポジトリが見つかりません。" >&2
-    echo "  DOTFILE_DIR 環境変数を設定するか、データリポジトリ内で実行してください。" >&2
+    echo "[dotfiles] Error: データリポジトリが見つかりません。" >&2
+    echo "  DOTFILES_DIR 環境変数を設定するか、データリポジトリ内で実行してください。" >&2
     return 1
 }
 
-DOTFILE="$(resolve_dotfile_dir)" || exit 1
+DOTFILES="$(resolve_dotfiles_dir)" || exit 1
 
 # データリポジトリの sync.conf を読み込む
-if [ -f "$DOTFILE/sync.conf" ]; then
-    source "$DOTFILE/sync.conf"
+if [ -f "$DOTFILES/sync.conf" ]; then
+    source "$DOTFILES/sync.conf"
 else
     SYNC_AUTO=()
     SYNC_MANUAL=()
@@ -43,14 +43,14 @@ fi
 
 check_version_compat() {
     local engine_version data_version
-    engine_version="$(cat "$DOTFILE_ENGINE_DIR/VERSION" 2>/dev/null || echo "0.0.0")"
-    data_version="$(cat "$DOTFILE/.infra-version" 2>/dev/null || echo "0.0.0")"
+    engine_version="$(cat "$DOTFILES_ENGINE_DIR/VERSION" 2>/dev/null || echo "0.0.0")"
+    data_version="$(cat "$DOTFILES/.infra-version" 2>/dev/null || echo "0.0.0")"
 
     local engine_major="${engine_version%%.*}"
     local data_major="${data_version%%.*}"
 
     if [ "$engine_major" != "$data_major" ]; then
-        echo "[dotfile] WARNING: バージョン不整合" >&2
+        echo "[dotfiles] WARNING: バージョン不整合" >&2
         echo "  エンジン: v${engine_version}" >&2
         echo "  データ:   v${data_version}" >&2
         echo "  メジャーバージョンが異なります。" >&2

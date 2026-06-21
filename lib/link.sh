@@ -122,10 +122,10 @@ main() {
         exit 1
     fi
 
-    echo "=== dotfile link ($os_key) ==="
+    echo "=== dotfiles link ($os_key) ==="
     echo ""
 
-    for yaml in "$DOTFILE"/*/link.yaml; do
+    for yaml in "$DOTFILES"/*/link.yaml; do
         [ -f "$yaml" ] || continue
         process_category "$(dirname "$yaml")" "$os_key"
     done

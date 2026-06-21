@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# lib/sync.sh — dotfile の同期エンジン。
+# lib/sync.sh — dotfiles の同期エンジン。
 # サブコマンド: pull / push / delete-category / gitignore
 set -euo pipefail
 
@@ -55,7 +55,7 @@ generate_commit_msg() {
 # --- .gitignore 生成 ---
 
 cmd_gitignore() {
-    local gitignore="$DOTFILE/.gitignore"
+    local gitignore="$DOTFILES/.gitignore"
     local marker_start="# --- auto-generated from sync.conf (do not edit below) ---"
     local marker_end="# --- end auto-generated ---"
 
@@ -91,7 +91,7 @@ cmd_gitignore() {
 # --- pull ---
 
 cmd_pull() {
-    cd "$DOTFILE"
+    cd "$DOTFILES"
 
     if [ -f .conflict-pending ]; then
         if ! git branch | grep -q 'conflict/'; then
@@ -162,7 +162,7 @@ cmd_pull() {
 # --- push ---
 
 cmd_push() {
-    cd "$DOTFILE"
+    cd "$DOTFILES"
 
     local current_branch
     current_branch="$(git branch --show-current)"
@@ -174,7 +174,7 @@ cmd_push() {
     local auto_paths=()
     local missing_categories=()
     for cat in $(get_categories_by_mode "auto"); do
-        if [ -d "$DOTFILE/$cat" ]; then
+        if [ -d "$DOTFILES/$cat" ]; then
             auto_paths+=("$cat")
         elif { [ -n "$(git ls-files -- "$cat")" ] ||
             [ -n "$(git ls-tree -r --name-only HEAD -- "$cat")" ]; }; then
@@ -188,7 +188,7 @@ cmd_push() {
         echo "[sync] Restore an accidental deletion with:" >&2
         printf '  git restore -- %q\n' "${missing_categories[@]}" >&2
         echo "[sync] Or permanently remove one category with:" >&2
-        echo "  dotfile delete-category <category>" >&2
+        echo "  dotfiles delete-category <category>" >&2
     fi
 
     for cat in "${auto_paths[@]}"; do
@@ -212,7 +212,7 @@ cmd_push() {
 
 cmd_delete_category() {
     if [ "$#" -ne 1 ]; then
-        echo "Usage: dotfile delete-category <category>" >&2
+        echo "Usage: dotfiles delete-category <category>" >&2
         return 1
     fi
 
@@ -228,7 +228,7 @@ cmd_delete_category() {
         return 1
     fi
 
-    cd "$DOTFILE"
+    cd "$DOTFILES"
 
     local current_branch
     current_branch="$(git branch --show-current)"
@@ -270,7 +270,7 @@ cmd_delete_category() {
     done
 
     local tmp_conf
-    tmp_conf="$(mktemp "${TMPDIR:-/tmp}/dotfile-conf.XXXXXX")"
+    tmp_conf="$(mktemp "${TMPDIR:-/tmp}/dotfiles-conf.XXXXXX")"
     awk -v replacement="SYNC_AUTO=(${new_auto[*]})" '
         /^SYNC_AUTO=\(/ {
             print replacement
@@ -290,7 +290,7 @@ cmd_delete_category() {
     }
 
     git reset -q HEAD -- "$category"
-    rm -rf -- "$DOTFILE/$category"
+    rm -rf -- "$DOTFILES/$category"
     mv -- "$tmp_conf" sync.conf
 
     local commit_paths=(sync.conf)
@@ -313,11 +313,11 @@ cmd_delete_category() {
 # --- conflict 通知バナー（シェル起動時に呼ぶ用） ---
 
 cmd_status() {
-    if [ -f "$DOTFILE/.conflict-pending" ]; then
+    if [ -f "$DOTFILES/.conflict-pending" ]; then
         echo ""
         echo "========================================"
-        echo "  [dotfile] CONFLICT PENDING"
-        echo "  Run: cd $DOTFILE && git log --oneline --graph --all"
+        echo "  [dotfiles] CONFLICT PENDING"
+        echo "  Run: cd $DOTFILES && git log --oneline --graph --all"
         echo "  See README.md for resolution steps."
         echo "========================================"
         echo ""
@@ -336,7 +336,7 @@ case "${1:-help}" in
     gitignore) cmd_gitignore ;;
     status)    cmd_status ;;
     *)
-        echo "Usage: dotfile {pull|push|delete-category|gitignore|status}"
+        echo "Usage: dotfiles {pull|push|delete-category|gitignore|status}"
         echo "  pull      — fetch and merge (or create conflict branch)"
         echo "  push      — auto-commit and push (auto category only)"
         echo "  delete-category <category>"

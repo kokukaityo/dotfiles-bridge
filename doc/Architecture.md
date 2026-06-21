@@ -6,28 +6,28 @@
 
 ```
 ┌──────────────────────────────┐     ┌──────────────────────────────┐
-│  dotfile エンジン             │     │  ユーザーデータリポジトリ      │
+│  dotfiles エンジン            │     │  ユーザーデータリポジトリ      │
 │  (kokukaityo/dotfile)        │     │  (各ユーザーの private repo)  │
 │  public / MIT                │     │                              │
 │                              │     │  sync.conf                   │
-│  bin/dotfile ─── エントリ    │────▶│  .infra-version              │
-│  lib/        ─── ロジック    │     │  ai-agent/  editor/  shell/  │
-│  template/   ─── 雛形       │     │  (各カテゴリ + link.yaml)     │
+│  bin/dotfiles ─── エントリ   │────▶│  .infra-version              │
+│  lib/         ─── ロジック   │     │  ai-agent/  editor/  shell/  │
+│  template/    ─── 雛形       │     │  (各カテゴリ + link.yaml)     │
 └──────────────────────────────┘     └──────────────────────────────┘
-     インストール先:                      デフォルト: ~/dotfile
-     ~/.local/share/dotfile/              dotfile init で生成
+     インストール先:                      デフォルト: ~/dotfiles
+     ~/.local/share/dotfiles/             dotfiles init で生成
 ```
 
-- エンジンに個人データは含まない。ユーザーは `dotfile init` でデータリポジトリを生成する
+- エンジンに個人データは含まない。ユーザーは `dotfiles init` でデータリポジトリを生成する
 - fork ではなく template 方式を採用。GitHub の fork ネットワークは CFOR（Cross Fork Object Reference）脆弱性があり、private repo の commit が fork 元の public repo 経由で参照可能になるため
 
 ### データリポジトリの解決順序
 
-`lib/conf.sh` の `resolve_dotfile_dir()` が以下の優先順位でデータリポジトリを探す:
+`lib/conf.sh` の `resolve_dotfiles_dir()` が以下の優先順位でデータリポジトリを探す:
 
-1. `DOTFILE_DIR` 環境変数が設定されている → そのパス
+1. `DOTFILES_DIR` 環境変数が設定されている → そのパス
 2. カレント git root に `.infra-version` が存在する → そのリポジトリ
-3. `$HOME/dotfile` に `.infra-version` が存在する → `$HOME/dotfile`
+3. `$HOME/dotfiles` に `.infra-version` が存在する → `$HOME/dotfiles`
 4. いずれも見つからない → エラー
 
 ---
@@ -35,7 +35,7 @@
 ## レイヤー構造と責務
 
 ```
-bin/dotfile          サブコマンドを受け取り、lib/ に委譲する
+bin/dotfiles         サブコマンドを受け取り、lib/ に委譲する
     │
     ├── lib/conf.sh      データリポジトリ解決、sync.conf 読み込み、バージョン互換チェック
     │       ↑ source される（lib/ 内の全スクリプトが依存）
@@ -44,22 +44,22 @@ bin/dotfile          サブコマンドを受け取り、lib/ に委譲する
     │
     ├── lib/link.sh      symlink 配置: link.yaml 解析、OS 判定、symlink 作成
     │
-    └── lib/hook/
+    └── lib/hooks/
         ├── pre-push     push 前ガード: コンフリクトマーカー検知、シークレット検知
-        └── post-merge   merge 後: symlink 再配置（dotfile link を自動実行）
+        └── post-merge   merge 後: symlink 再配置（dotfiles link を自動実行）
 ```
 
-### bin/dotfile — ルーティング層
+### bin/dotfiles — ルーティング層
 
 - サブコマンド（`init`, `setup`, `link`, `pull`, `push`, `delete-category`, `gitignore`, `status`, `version`, `help`）を受け取り、対応する処理に振り分ける
 - `cmd_init()` と `cmd_setup()` はこのファイル内に実装（`conf.sh` 不要で動く必要があるため）
-- `link`, `pull`, `push` 等は `bash "$DOTFILE_ENGINE_LIB/sync.sh"` や `bash "$DOTFILE_ENGINE_LIB/link.sh"` で委譲
+- `link`, `pull`, `push` 等は `bash "$DOTFILES_ENGINE_LIB/sync.sh"` や `bash "$DOTFILES_ENGINE_LIB/link.sh"` で委譲
 - `resolve_path()`: macOS の `readlink -f` 非対応を回避する自前のシンボリックリンク解決
 
 ### lib/conf.sh — 設定解決層
 
 - `source` して使う（単体実行しない）
-- データリポジトリのパスを `$DOTFILE` にセット
+- データリポジトリのパスを `$DOTFILES` にセット
 - `sync.conf` を source して `SYNC_AUTO`, `SYNC_MANUAL`, `SYNC_IGNORE` 配列を取得
 - `check_version_compat()`: エンジンの `VERSION` とデータの `.infra-version` のメジャーバージョンを比較。不一致時は WARNING
 
@@ -81,14 +81,14 @@ bin/dotfile          サブコマンドを受け取り、lib/ に委譲する
 - `process_category()`: カテゴリディレクトリごとに link.yaml を処理
 - 全カテゴリの `*/link.yaml` をイテレート
 
-### lib/hook/ — Git Hooks
+### lib/hooks/ — Git Hooks
 
 - **pre-push**: ワークツリー内のコンフリクトマーカーとシークレットパターンを `git grep` で検査。`SKIP_SECRET_SCAN=1` でシークレット検知をバイパス可能
-- **post-merge**: `dotfile link`（PATH にあれば）または `lib/link.sh` を直接実行して symlink を再配置
+- **post-merge**: `dotfiles link`（PATH にあれば）または `lib/link.sh` を直接実行して symlink を再配置
 
 ### template/ — データリポジトリの雛形
 
-- `dotfile init` 実行時に `cp -r` でコピーされる
+- `dotfiles init` 実行時に `cp -r` でコピーされる
 - `sync.conf`: デフォルトのカテゴリ定義
 - `.infra-version`: エンジンバージョンとの互換チェック用
 - 各カテゴリのサンプル（`ai-agent/`, `editor/`, `shell/` + `link.yaml`）
@@ -103,7 +103,7 @@ bin/dotfile          サブコマンドを受け取り、lib/ に委譲する
 
 | モード | 動作 | 例 |
 |---|---|---|
-| `SYNC_AUTO` | `dotfile push` で自動 commit & push | `ai-agent`, `editor`, `shell` |
+| `SYNC_AUTO` | `dotfiles push` で自動 commit & push | `ai-agent`, `editor`, `shell` |
 | `SYNC_MANUAL` | Git 追跡するが commit/push は手動 | — |
 | `SYNC_IGNORE` | `.gitignore` に自動追加 | `backup`, `raw` |
 
@@ -127,7 +127,7 @@ win32:
 
 リモートと分岐した場合、merge ではなく `conflict/{hostname}/{timestamp}` ブランチに退避し、main を `origin/main` に reset する。
 
-理由: dotfile の同期で merge conflict が発生した場合、自動解決は危険。ユーザーが明示的に解消用ブランチで resolve してから main に ff-only で取り込む。main が壊れるリスクを排除する。
+理由: dotfiles の同期で merge conflict が発生した場合、自動解決は危険。ユーザーが明示的に解消用ブランチで resolve してから main に ff-only で取り込む。main が壊れるリスクを排除する。
 
 ### バージョン互換チェック
 
