@@ -1,3 +1,5 @@
+// sync.go は Git 同期（pull/push）、カテゴリ削除、.gitignore 生成、ステータス表示を担当する。
+// このファイルが最も多くの機能を持ち、データリポジトリへの書き込み操作の大部分を担う。
 package engine
 
 import (
@@ -15,6 +17,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// gitignore のマーカー行。この行より上はユーザーの手書き、下は自動生成。
+// GenerateGitignore はマーカー上を保持し、マーカー下だけを再生成する。
 const (
 	gitignoreMarkerStart = "# --- auto-generated from sync.toml (do not edit below) ---"
 	gitignoreMarkerEnd   = "# --- end auto-generated ---"
@@ -22,6 +26,9 @@ const (
 
 var categoryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
 
+// GenerateGitignore は .gitignore を再生成する。
+// マーカー行より上のユーザー手書き部分を保持し、マーカー以下を
+// sync.toml の ignore カテゴリやセキュリティ除外パターンから再生成する。
 func GenerateGitignore(config *Config) error {
 	path := RepositoryPath(config, ".gitignore")
 	manualSection, err := readManualGitignore(path)
@@ -76,6 +83,8 @@ func readManualGitignore(path string) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
+// Status は .conflict-pending マーカーの有無を確認し、未解決コンフリクトがあれば警告する。
+// シェル起動時に dotfile status を呼ぶ運用を想定した軽量チェック。
 func Status(config *Config, stdout io.Writer) error {
 	if _, err := os.Stat(RepositoryPath(config, ".conflict-pending")); err == nil {
 		_, _ = fmt.Fprintln(stdout, "")
@@ -90,6 +99,12 @@ func Status(config *Config, stdout io.Writer) error {
 	return nil
 }
 
+// Pull は fetch 後にローカルとリモートの関係を判定し、4通りに分岐する。
+//  1. 最新: 何もしない
+//  2. ローカルが遅れている: fast-forward merge
+//  3. ローカルが先行: pull をスキップ（push を促す）
+//  4. 分岐: ローカルを conflict/<host>/<timestamp> ブランチに退避し、
+//     デフォルトブランチをリモートに合わせる。自動 merge はしない安全設計。
 func Pull(config *Config, stdout, stderr io.Writer) error {
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout, Stderr: stderr}
 	if err := clearResolvedConflictMarker(config, git, stdout); err != nil {
@@ -164,6 +179,9 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 	return nil
 }
 
+// clearResolvedConflictMarker は Pull の冒頭で呼ばれる自動クリーンアップ。
+// ユーザーが conflict ブランチを全て削除していれば、.conflict-pending マーカーも消す。
+// ブランチがまだ残っていれば何もしない。
 func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer) error {
 	marker := RepositoryPath(config, ".conflict-pending")
 	if _, err := os.Stat(marker); os.IsNotExist(err) {
@@ -184,11 +202,16 @@ func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer
 	return nil
 }
 
+// sanitizeBranchPart はホスト名など外部由来の文字列を Git ブランチ名に使える形にする。
+// Git が禁止する文字（スペース, ~, ^, :, ?, *, [, \, ..）をハイフンに置換する。
 func sanitizeBranchPart(value string) string {
 	replacer := strings.NewReplacer(" ", "-", "~", "-", "^", "-", ":", "-", "?", "-", "*", "-", "[", "-", "\\", "-", "..", "-")
 	return strings.Trim(replacer.Replace(value), "./")
 }
 
+// Push は auto カテゴリの変更だけを stage → commit → push する。
+// デフォルトブランチ以外では実行しない安全弁付き。
+// manual カテゴリや ignore カテゴリの変更は意図的に対象外。
 func Push(config *Config, stdout, stderr io.Writer) error {
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout, Stderr: stderr}
 	currentBranch, err := git.Output("branch", "--show-current")
@@ -253,6 +276,9 @@ func Push(config *Config, stdout, stderr io.Writer) error {
 	return nil
 }
 
+// trackedCategory はカテゴリが Git に追跡されているかを2段階で確認する。
+// ls-files（ワークツリー）と ls-tree（HEAD）の両方を見ることで、
+// ディレクトリが消えていても追跡履歴があれば検出できる。
 func trackedCategory(git GitRunner, category string) bool {
 	if output, err := git.Output("ls-files", "--", category); err == nil && output != "" {
 		return true
@@ -261,6 +287,8 @@ func trackedCategory(git GitRunner, category string) bool {
 	return err == nil && output != ""
 }
 
+// generateCommitMsg は staged の差分を add/update/delete に分類して
+// "add: file1; update: file2" のような自動コミットメッセージを生成する。
 func generateCommitMsg(git GitRunner, paths []string) (string, error) {
 	type change struct {
 		filter string
@@ -307,6 +335,9 @@ func uniqueBaseNames(output string) []string {
 	return names
 }
 
+// DeleteCategory は auto カテゴリを sync.toml・ファイルシステム・Git 履歴から一括削除する。
+// sync.toml 更新 + カテゴリ削除 + push を1コミットにまとめるトランザクション的な処理。
+// デフォルトブランチ以外や sync.toml に未コミット変更がある場合は拒否する。
 func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) error {
 	if !categoryNamePattern.MatchString(category) || category == "." || category == ".." {
 		return fmt.Errorf("不正なカテゴリ名です: %s", category)
@@ -360,6 +391,8 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	return nil
 }
 
+// writeSyncConfig は sync.toml をアトミックに書き換える。
+// 一時ファイルに書いてから rename することで、書き込み途中のクラッシュでファイルが壊れるのを防ぐ。
 func writeSyncConfig(path string, config SyncConfig) error {
 	dir := filepath.Dir(path)
 	temp, err := os.CreateTemp(dir, ".sync.toml-*")
@@ -388,6 +421,9 @@ func writeSyncConfig(path string, config SyncConfig) error {
 	return nil
 }
 
+// replaceFile は OS ごとのアトミックなファイル置換。
+// Unix は rename で上書きできるが、Windows は既存ファイルがあると rename が失敗するため、
+// 退避 → 置換 → 退避削除のフォールバックを行う。置換失敗時は退避から復元する。
 func replaceFile(destination, source string) error {
 	if runtime.GOOS != "windows" {
 		if err := os.Rename(source, destination); err != nil {

@@ -1,3 +1,5 @@
+// platform.go は OS 依存の変換処理を集約する。
+// link.toml のセクション名やパス中の ~ 展開など、プラットフォーム差を吸収する。
 package engine
 
 import (
@@ -8,6 +10,9 @@ import (
 	"strings"
 )
 
+// OSKey は runtime.GOOS を link.toml のセクションキーに変換する。
+// "windows" → "win32" の変換は、link.toml のキーを
+// Node.js の process.platform に合わせているため。
 func OSKey() (string, error) {
 	switch runtime.GOOS {
 	case "windows":
@@ -19,6 +24,9 @@ func OSKey() (string, error) {
 	}
 }
 
+// ExpandHome はパス先頭の ~ をホームディレクトリに展開する。
+// Go 標準ライブラリには ~ 展開がないため自前で実装。
+// link.toml のターゲットパスが "~/..." 形式で書かれるので、各所から呼ばれる。
 func ExpandHome(path string) (string, error) {
 	if path != "~" && !strings.HasPrefix(path, "~/") && !strings.HasPrefix(path, `~\`) {
 		return filepath.Clean(path), nil

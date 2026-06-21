@@ -5,6 +5,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// setupCommand は clone 済みの既存データリポジトリに hooks・gitignore・symlink を適用する。
+// init が「新規作成」なのに対し、setup は「別マシンで既存リポジトリを使い始める」ときに使う。
 func (a *application) setupCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "setup",

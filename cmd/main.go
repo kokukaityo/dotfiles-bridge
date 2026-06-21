@@ -1,3 +1,5 @@
+// main.go はエントリポイント。os.Exit を呼ぶ唯一のファイル。
+// ロジックは持たず、execute() → Cobra → internal パッケージへ全て委譲する。
 package main
 
 import (

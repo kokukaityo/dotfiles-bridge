@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// versionCommand はエンジンとデータリポジトリのバージョンを表示する。
+// Resolve のエラーは握り潰す。データリポジトリがなくてもエンジンバージョンだけは表示したいため。
 func (a *application) versionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",

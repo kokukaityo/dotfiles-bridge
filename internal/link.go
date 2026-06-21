@@ -1,3 +1,7 @@
+// link.go は link.toml に基づく symlink の配置を担当する。
+// SetupRepository (setup) と linkCommand (link) の両方から呼ばれる。
+// ユーザーのファイルを直接操作するため、既存ファイルのバックアップと
+// 同一リンク済みのスキップで安全性を担保する。
 package engine
 
 import (
@@ -12,6 +16,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// LinkConfig は link.toml の構造: OSキー → ソースファイル名 → ターゲットパスのリスト。
+// 1つのソースに複数ターゲットを指定できる（例: 同じ settings.json を VS Code と Cursor に配置）。
 type LinkConfig map[string]map[string][]string
 
 func loadLinkConfig(path string) (LinkConfig, error) {
@@ -22,6 +28,8 @@ func loadLinkConfig(path string) (LinkConfig, error) {
 	return config, nil
 }
 
+// LinkAll は全カテゴリの link.toml を走査し、現在の OS に該当するセクションだけ処理する。
+// 他 OS のセクションは無視されるので、1つの link.toml に全 OS 分を書ける。
 func LinkAll(config *Config, stdout io.Writer) error {
 	osKey, err := OSKey()
 	if err != nil {
@@ -81,6 +89,9 @@ func LinkAll(config *Config, stdout io.Writer) error {
 	return nil
 }
 
+// createLink は1つの symlink を安全に配置する。
+// ターゲットに既存ファイルがあれば .bak.<timestamp> にバックアップ、
+// 既に同じソースへのリンクなら何もしない。
 func createLink(source, target string, stdout io.Writer) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("リンク先ディレクトリを作成できません: %w", err)

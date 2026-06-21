@@ -5,6 +5,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// pullCommand はリモートの変更をローカルに反映する。
+// コンフリクト時は自動 merge せず退避ブランチに逃がす安全設計。
 func (a *application) pullCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "pull",
@@ -20,6 +22,8 @@ func (a *application) pullCommand() *cobra.Command {
 	}
 }
 
+// pushCommand は auto カテゴリの変更だけを commit して push する。
+// manual カテゴリの変更は含めない。pull とは非対称な設計。
 func (a *application) pushCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "push",

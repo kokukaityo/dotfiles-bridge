@@ -1,3 +1,6 @@
+// setup.go はデータリポジトリの初期化（init）と既存リポジトリへの設定適用（setup）を担当する。
+// init: テンプレート展開 → git init → SetupRepository → 初回コミット の一連フロー。
+// setup: clone 済みリポジトリに hooks・gitattributes・gitignore・symlink を適用するフロー。
 package engine
 
 import (
@@ -12,6 +15,9 @@ import (
 
 const hookFileMode fs.FileMode = 0o755
 
+// InitializeRepository は dotfile init のフロー全体を実行する。
+// テンプレート展開 → git init → SetupRepository → add + commit まで一括で行う。
+// 対象パスが既に存在する場合はエラーにして上書きを防ぐ。
 func InitializeRepository(target string, templateFS fs.FS, engineVersion string, hookFS fs.FS, stdout io.Writer) error {
 	target, err := ExpandHome(target)
 	if err != nil {
@@ -54,6 +60,8 @@ func InitializeRepository(target string, templateFS fs.FS, engineVersion string,
 	return nil
 }
 
+// extractTemplate は埋め込みテンプレート（embed.go の TemplateFS）をディスクに展開する。
+// template/ 配下のディレクトリ構造をそのまま再現する。
 func extractTemplate(templateFS fs.FS, target string) error {
 	return fs.WalkDir(templateFS, "template", func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -78,6 +86,8 @@ func extractTemplate(templateFS fs.FS, target string) error {
 	})
 }
 
+// SetupRepository は dotfile setup のフロー。InitializeRepository からも呼ばれる共通処理。
+// hooks 展開 → core.hooksPath 設定 → gitattributes → gitignore 生成 → symlink 配置 の順。
 func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout}
 	if !git.Success("rev-parse", "--git-dir") {
@@ -105,6 +115,9 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 	return nil
 }
 
+// installHooks は埋め込みの hook スクリプトを .dotfile-hook/ に書き出す。
+// .git/hooks/ ではなく core.hooksPath で参照させることで、
+// データリポジトリ側に hook を置きつつ Git 追跡対象外にできる。
 func installHooks(dotfilesDir string, hookFS fs.FS) error {
 	hookDir := filepath.Join(dotfilesDir, ".dotfile-hook")
 	if err := os.MkdirAll(hookDir, 0o755); err != nil {
@@ -126,6 +139,9 @@ func installHooks(dotfilesDir string, hookFS fs.FS) error {
 	return nil
 }
 
+// ensureLine は冪等な「ファイルにこの行がなければ追記」ヘルパー。
+// .gitattributes の "* -text"（改行コード自動変換の無効化）に使っている。
+// 何度呼んでも重複行が増えない。
 func ensureLine(path, expected string) error {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {

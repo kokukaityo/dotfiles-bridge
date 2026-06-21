@@ -1,3 +1,4 @@
+// root.go は Cobra のルートコマンド定義と、全サブコマンドで共有する application 構造体を持つ。
 package main
 
 import (
@@ -10,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// application は embed.go で宣言した埋め込みリソースを保持し、各サブコマンドへ渡す中継役。
+// execute() で生成され、全てのコマンド定義メソッドのレシーバになる。
 type application struct {
 	templateFS    fs.FS
 	hookFS        fs.FS
@@ -47,6 +50,8 @@ func (a *application) rootCommand() *cobra.Command {
 	return root
 }
 
+// config は init・version 以外の全サブコマンドが最初に呼ぶ共通処理。
+// データリポジトリの解決とバージョン不整合の警告を集約している。
 func (a *application) config() (*engine.Config, error) {
 	config, err := engine.Resolve(a.engineVersion)
 	if err != nil {
