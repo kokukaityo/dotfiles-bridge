@@ -8,9 +8,14 @@
 - 分岐時のローカル変更退避
 - push前のコンフリクト・シークレット検査
 
-## ビルド
+## 前提条件
 
-Go 1.26以降が必要。
+| 環境    | 要件                                                           |
+| ------- | -------------------------------------------------------------- |
+| 共通    | Go 1.26以降、Git 2.x                                          |
+| Windows | 開発者モードの有効化（symlink作成に必要。設定→システム→開発者向け） |
+
+## ビルド
 
 ```bash
 make build
@@ -109,7 +114,7 @@ WindowsのOSキーは `win32`。
 "settings.json" = ["~/AppData/Roaming/Code/User/settings.json"]
 ```
 
-既存のリンク先は `.bak.<timestamp>` に退避する。Windowsでsymlink作成に失敗する場合は、開発者モードを有効化する。
+既存のリンク先はデータリポジトリの `.backup/<category>/<timestamp>/` に退避する。Windowsでsymlink作成に失敗する場合は、[前提条件](#前提条件)を確認する。
 
 ## コンフリクト
 

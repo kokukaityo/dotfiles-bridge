@@ -37,6 +37,11 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
 
+    // Terminal — bare repo + worktree 環境の暫定対応 (issue #3)
+    "terminal.integrated.env.windows": {
+        "GOFLAGS": "-buildvcs=false"
+    },
+
     // Explorer
     "files.watcherExclude": {
         "dist/**": true
