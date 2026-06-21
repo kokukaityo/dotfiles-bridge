@@ -112,7 +112,8 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	runGit(t, first, "commit", "-m", "initial")
 	runGit(t, first, "push", "-u", "origin", "develop")
 
-	config, err := loadConfig(first, "1.0.0")
+	EngineVersion = "1.0.0"
+	config, err := loadConfig(first)
 	if err != nil {
 		t.Fatal(err)
 	}

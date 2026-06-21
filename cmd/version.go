@@ -15,8 +15,8 @@ func (a *application) versionCommand() *cobra.Command {
 		Short: "バージョン情報を表示",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dotfile engine v%s\n", a.engineVersion)
-			config, err := engine.Resolve(a.engineVersion)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dotfile engine v%s\n", engine.EngineVersion)
+			config, err := engine.Resolve()
 			if err != nil {
 				return nil
 			}

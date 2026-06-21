@@ -18,7 +18,7 @@ func (a *application) initCommand() *cobra.Command {
 			if len(args) == 1 {
 				target = args[0]
 			}
-			return engine.InitializeRepository(target, a.templateFS, a.engineVersion, a.hookFS, cmd.OutOrStdout())
+			return engine.InitializeRepository(target, a.templateFS, a.hookFS, cmd.OutOrStdout())
 		},
 	}
 }

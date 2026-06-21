@@ -5,10 +5,13 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	engine "github.com/kokukaityo/dotfile/internal"
 )
 
 func TestVersionCommandWithoutDataRepository(t *testing.T) {
-	app := &application{templateFS: fstest.MapFS{}, hookFS: fstest.MapFS{}, engineVersion: "1.2.3"}
+	engine.EngineVersion = "1.2.3"
+	app := &application{templateFS: fstest.MapFS{}, hookFS: fstest.MapFS{}}
 	command := app.rootCommand()
 	var stdout bytes.Buffer
 	command.SetArgs([]string{"version"})
@@ -25,7 +28,8 @@ func TestVersionCommandWithoutDataRepository(t *testing.T) {
 
 func TestRootCommandReturnsErrorWithoutExit(t *testing.T) {
 	existing := t.TempDir()
-	app := &application{templateFS: fstest.MapFS{}, hookFS: fstest.MapFS{}, engineVersion: "1.0.0"}
+	engine.EngineVersion = "1.0.0"
+	app := &application{templateFS: fstest.MapFS{}, hookFS: fstest.MapFS{}}
 	command := app.rootCommand()
 	command.SetArgs([]string{"init", existing})
 	command.SetOut(&bytes.Buffer{})

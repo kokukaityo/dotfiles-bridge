@@ -69,6 +69,10 @@ var (
 	infraVersionFile = Setting.Path.InfraVersionFile
 
 	DefaultDir = "~/" + defaultDir
+
+	// EngineVersion はビルド時に embed された VERSION 文字列。
+	// main.go が起動時にセットする。
+	EngineVersion string
 )
 
 // SyncConfig は sync.toml をそのまま構造体にしたもの。
@@ -92,12 +96,12 @@ type Config struct {
 
 // Resolve は cmd 層から呼ばれる公開エントリポイント。
 // 「データリポジトリを探す → 設定を読む」を一括で行い、Config を返す。
-func Resolve(engineVersion string) (*Config, error) {
+func Resolve() (*Config, error) {
 	dir, err := resolveDotfilesDir()
 	if err != nil {
 		return nil, err
 	}
-	return loadConfig(dir, engineVersion)
+	return loadConfig(dir)
 }
 
 // resolveDotfilesDir は3段フォールバックでデータリポジトリを探す。
@@ -141,7 +145,7 @@ func isDataRepository(dir string) bool {
 
 // loadConfig は確定済みのディレクトリから sync.toml と .infra-version を読み、
 // エンジンバージョンと合わせて Config を組み立てる。
-func loadConfig(dir, engineVersion string) (*Config, error) {
+func loadConfig(dir string) (*Config, error) {
 	syncConfig, err := loadSyncConfig(filepath.Join(dir, syncConfigFile))
 	if err != nil {
 		return nil, fmt.Errorf("%sを読み込めません: %w", syncConfigFile, err)
@@ -156,7 +160,7 @@ func loadConfig(dir, engineVersion string) (*Config, error) {
 	}
 
 	config := &Config{
-		EngineVersion: strings.TrimSpace(engineVersion),
+		EngineVersion: strings.TrimSpace(EngineVersion),
 		DotfilesDir:   filepath.Clean(dir),
 		DataVersion:   strings.TrimSpace(string(versionBytes)),
 		Sync:          syncConfig,

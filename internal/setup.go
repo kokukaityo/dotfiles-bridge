@@ -25,7 +25,7 @@ var (
 // InitializeRepository は dotfile init のフロー全体を実行する。
 // テンプレート展開 → git init → SetupRepository → add + commit まで一括で行う。
 // 対象パスが既に存在する場合はエラーにして上書きを防ぐ。
-func InitializeRepository(target string, templateFS fs.FS, engineVersion string, hookFS fs.FS, stdout io.Writer) error {
+func InitializeRepository(target string, templateFS fs.FS, hookFS fs.FS, stdout io.Writer) error {
 	target, err := ExpandPath(target)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func InitializeRepository(target string, templateFS fs.FS, engineVersion string,
 		return err
 	}
 
-	config, err := loadConfig(target, engineVersion)
+	config, err := loadConfig(target)
 	if err != nil {
 		return err
 	}

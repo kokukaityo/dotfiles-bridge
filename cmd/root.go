@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"strings"
 
 	engine "github.com/kokukaityo/dotfile/internal"
 	"github.com/spf13/cobra"
@@ -14,16 +13,14 @@ import (
 // application は embed.go で宣言した埋め込みリソースを保持し、各サブコマンドへ渡す中継役。
 // execute() で生成され、全てのコマンド定義メソッドのレシーバになる。
 type application struct {
-	templateFS    fs.FS
-	hookFS        fs.FS
-	engineVersion string
+	templateFS fs.FS
+	hookFS     fs.FS
 }
 
-func execute(templateFS fs.FS, engineVersion string, hookFS fs.FS) error {
+func execute(templateFS fs.FS, hookFS fs.FS) error {
 	app := &application{
-		templateFS:    templateFS,
-		hookFS:        hookFS,
-		engineVersion: strings.TrimSpace(engineVersion),
+		templateFS: templateFS,
+		hookFS:     hookFS,
 	}
 	return app.rootCommand().Execute()
 }
@@ -53,7 +50,7 @@ func (a *application) rootCommand() *cobra.Command {
 // config は init・version 以外の全サブコマンドが最初に呼ぶ共通処理。
 // データリポジトリの解決とバージョン不整合の警告を集約している。
 func (a *application) config() (*engine.Config, error) {
-	config, err := engine.Resolve(a.engineVersion)
+	config, err := engine.Resolve()
 	if err != nil {
 		return nil, err
 	}
