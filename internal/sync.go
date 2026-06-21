@@ -401,4 +401,3 @@ func writeSyncConfig(path string, config SyncConfig) error {
 	}
 	return nil
 }
-

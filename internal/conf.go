@@ -40,6 +40,7 @@ type PathSetting struct {
 	DefaultDir         string `toml:"default_dir"`
 	TemplateDir        string `toml:"template_dir"`
 	HookDir            string `toml:"hook_dir"`
+	BackupDir          string `toml:"backup_dir"`
 	InfraVersionFile   string `toml:"infra_version_file"`
 	SyncConfigFile     string `toml:"sync_config_file"`
 	LinkConfigFile     string `toml:"link_config_file"`

@@ -19,6 +19,7 @@ import (
 // LinkConfig は link.toml の構造: OSキー → ソースファイル名 → ターゲットパスのリスト。
 // 1つのソースに複数ターゲットを指定できる（例: 同じ settings.json を VS Code と Cursor に配置）。
 var linkConfigFile = Setting.Path.LinkConfigFile
+var backupDir = Setting.Path.BackupDir
 
 type LinkConfig map[string]map[string][]string
 
@@ -58,6 +59,8 @@ func LinkAll(config *Config, stdout io.Writer) error {
 		}
 
 		_, _ = fmt.Fprintf(stdout, "[%s]\n", categoryName)
+		timestamp := time.Now().Format("20060102150405")
+		categoryBackupDir := RepositoryPath(config, backupDir, categoryName, timestamp)
 		sources := make([]string, 0, len(entries))
 		for source := range entries {
 			sources = append(sources, source)
@@ -81,7 +84,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 				if err != nil {
 					return err
 				}
-				if err := createLink(sourcePath, targetPath, stdout); err != nil {
+				if err := createLink(sourcePath, targetPath, categoryBackupDir, stdout); err != nil {
 					return err
 				}
 			}
@@ -91,10 +94,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 	return nil
 }
 
-// createLink は1つの symlink を安全に配置する。
-// ターゲットに既存ファイルがあれば .bak.<timestamp> にバックアップ、
-// 既に同じソースへのリンクなら何もしない。
-func createLink(source, target string, stdout io.Writer) error {
+func createLink(source, target, backupBaseDir string, stdout io.Writer) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("リンク先ディレクトリを作成できません: %w", err)
 	}
@@ -108,11 +108,14 @@ func createLink(source, target string, stdout io.Writer) error {
 			}
 		}
 
-		backup := target + ".bak." + time.Now().Format("20060102150405")
-		if err := os.Rename(target, backup); err != nil {
+		if err := os.MkdirAll(backupBaseDir, 0o755); err != nil {
+			return fmt.Errorf("バックアップディレクトリを作成できません: %w", err)
+		}
+		backupPath := filepath.Join(backupBaseDir, filepath.Base(target))
+		if err := os.Rename(target, backupPath); err != nil {
 			return fmt.Errorf("既存ファイルをバックアップできません (%s): %w", target, err)
 		}
-		_, _ = fmt.Fprintf(stdout, "  backed up: %s -> %s\n", target, backup)
+		_, _ = fmt.Fprintf(stdout, "  backed up: %s -> %s\n", target, backupPath)
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("リンク先を確認できません (%s): %w", target, err)
 	}

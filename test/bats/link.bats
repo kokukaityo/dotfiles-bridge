@@ -39,7 +39,7 @@ TOML
   assert_output "source content"
 }
 
-@test "link: 既存ファイルを .bak.* にバックアップ" {
+@test "link: 既存ファイルを .backup/ にバックアップ" {
   can_symlink || skip "symlink creation not available"
   create_data_repo
 
@@ -62,8 +62,12 @@ TOML
   assert_output --partial "backed up:"
 
   local backup_count
-  backup_count=$(ls "$HOME"/existing-file.bak.* 2>/dev/null | wc -l)
-  [[ "$backup_count" -ge 1 ]] || fail "expected backup file to exist"
+  backup_count=$(ls "$DOTFILES_DIR"/.backup/editor/*/existing-file 2>/dev/null | wc -l)
+  [[ "$backup_count" -ge 1 ]] || fail "expected backup file in .backup/editor/"
+
+  local old_backup_count
+  old_backup_count=$(ls "$HOME"/existing-file.bak.* 2>/dev/null | wc -l)
+  [[ "$old_backup_count" -eq 0 ]] || fail "unexpected old-style backup file"
 }
 
 @test "link: リンク済みならスキップ" {
