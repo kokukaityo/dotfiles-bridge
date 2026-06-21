@@ -21,6 +21,9 @@ import (
 var (
 	gitignoreMarkerStart = Setting.Gitignore.MarkerStart
 	gitignoreMarkerEnd   = Setting.Gitignore.MarkerEnd
+	securityPatterns     = Setting.Gitignore.SecurityPatterns
+	conflictMarkerFile   = Setting.Path.ConflictMarkerFile
+	syncConfigFile       = Setting.Path.SyncConfigFile
 )
 
 var categoryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
@@ -42,7 +45,7 @@ func GenerateGitignore(config *Config) error {
 	}
 	output.WriteString(gitignoreMarkerStart + "\n\n")
 	output.WriteString("# Security exclusions\n")
-	for _, pattern := range Setting.Gitignore.SecurityPatterns {
+	for _, pattern := range securityPatterns {
 		output.WriteString(pattern + "\n")
 	}
 	output.WriteString("\n")
@@ -50,7 +53,7 @@ func GenerateGitignore(config *Config) error {
 	for _, category := range config.Sync.Ignore {
 		output.WriteString(category + "/\n")
 	}
-	output.WriteString("\n" + Setting.Path.ConflictMarkerFile + "\n" + Setting.Path.HookDir + "/\n")
+	output.WriteString("\n" + conflictMarkerFile + "\n" + hookDir + "/\n")
 	output.WriteString(gitignoreMarkerEnd + "\n")
 
 	if err := os.WriteFile(path, []byte(output.String()), 0o644); err != nil {
@@ -88,7 +91,7 @@ func readManualGitignore(path string) (string, error) {
 // Status は .conflict-pending マーカーの有無を確認し、未解決コンフリクトがあれば警告する。
 // シェル起動時に dotfile status を呼ぶ運用を想定した軽量チェック。
 func Status(config *Config, stdout io.Writer) error {
-	if _, err := os.Stat(RepositoryPath(config, Setting.Path.ConflictMarkerFile)); err == nil {
+	if _, err := os.Stat(RepositoryPath(config, conflictMarkerFile)); err == nil {
 		_, _ = fmt.Fprintln(stdout, "")
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "  [dotfile] CONFLICT PENDING")
@@ -174,8 +177,8 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 	if err := git.Run("reset", "--hard", remoteRef); err != nil {
 		return err
 	}
-	if err := os.WriteFile(RepositoryPath(config, Setting.Path.ConflictMarkerFile), nil, 0o644); err != nil {
-		return fmt.Errorf("%sを作成できません: %w", Setting.Path.ConflictMarkerFile, err)
+	if err := os.WriteFile(RepositoryPath(config, conflictMarkerFile), nil, 0o644); err != nil {
+		return fmt.Errorf("%sを作成できません: %w", conflictMarkerFile, err)
 	}
 	_, _ = fmt.Fprintf(stdout, "[sync] ローカル変更は%sへ退避し、%sを%sへ戻しました。\n", conflictBranch, config.Sync.DefaultBranch, remoteRef)
 	return nil
@@ -185,7 +188,7 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 // ユーザーが conflict ブランチを全て削除していれば、.conflict-pending マーカーも消す。
 // ブランチがまだ残っていれば何もしない。
 func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer) error {
-	marker := RepositoryPath(config, Setting.Path.ConflictMarkerFile)
+	marker := RepositoryPath(config, conflictMarkerFile)
 	if _, err := os.Stat(marker); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -197,7 +200,7 @@ func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer
 	}
 	if branches == "" {
 		if err := os.Remove(marker); err != nil {
-			return fmt.Errorf("%sを削除できません: %w", Setting.Path.ConflictMarkerFile, err)
+			return fmt.Errorf("%sを削除できません: %w", conflictMarkerFile, err)
 		}
 		_, _ = fmt.Fprintln(stdout, "[sync] コンフリクト解消を確認し、マーカーを削除しました。")
 	}
@@ -331,14 +334,14 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if !slices.Contains(config.Sync.Auto, category) {
 		return fmt.Errorf("自動同期カテゴリではありません: %s", category)
 	}
-	if !git.Success("diff", "--quiet", "--", Setting.Path.SyncConfigFile) ||
-		!git.Success("diff", "--cached", "--quiet", "--", Setting.Path.SyncConfigFile) {
-		return fmt.Errorf("%sに未コミットの変更があります", Setting.Path.SyncConfigFile)
+	if !git.Success("diff", "--quiet", "--", syncConfigFile) ||
+		!git.Success("diff", "--cached", "--quiet", "--", syncConfigFile) {
+		return fmt.Errorf("%sに未コミットの変更があります", syncConfigFile)
 	}
 
 	hadTracked := trackedCategory(git, category)
 	config.Sync.Auto = slices.DeleteFunc(config.Sync.Auto, func(s string) bool { return s == category })
-	if err := writeSyncConfig(RepositoryPath(config, Setting.Path.SyncConfigFile), config.Sync); err != nil {
+	if err := writeSyncConfig(RepositoryPath(config, syncConfigFile), config.Sync); err != nil {
 		return err
 	}
 	if err := git.Run("reset", "-q", "HEAD", "--", category); err != nil && hadTracked {
@@ -347,10 +350,10 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if err := os.RemoveAll(RepositoryPath(config, category)); err != nil {
 		return fmt.Errorf("カテゴリを削除できません: %w", err)
 	}
-	if err := git.Run("add", "--", Setting.Path.SyncConfigFile); err != nil {
+	if err := git.Run("add", "--", syncConfigFile); err != nil {
 		return err
 	}
-	commitPaths := []string{Setting.Path.SyncConfigFile}
+	commitPaths := []string{syncConfigFile}
 	if hadTracked {
 		if err := git.Run("add", "-A", "--", category); err != nil {
 			return err

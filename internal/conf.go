@@ -64,7 +64,12 @@ type GitignoreSetting struct {
 
 // --- ランタイム設定（データリポジトリ） ---
 
-var DefaultDir = "~/" + Setting.Path.DefaultDir
+var (
+	defaultDir       = Setting.Path.DefaultDir
+	infraVersionFile = Setting.Path.InfraVersionFile
+
+	DefaultDir = "~/" + defaultDir
+)
 
 // SyncConfig は sync.toml をそのまま構造体にしたもの。
 // カテゴリの同期モード（auto/manual/ignore）とブランチ設定を保持する。
@@ -99,6 +104,7 @@ func Resolve(engineVersion string) (*Config, error) {
 //  1. DOTFILES_DIR 環境変数（明示指定を最優先）
 //  2. カレントディレクトリの Git ルート（データリポジトリ内で作業中のケース）
 //  3. ~/dotfiles（規約ベースのデフォルト）
+//
 // 各候補は isDataRepository で .infra-version の存在を確認してから採用する。
 func resolveDotfilesDir() (string, error) {
 	if envDir := os.Getenv("DOTFILES_DIR"); envDir != "" {
@@ -117,7 +123,7 @@ func resolveDotfilesDir() (string, error) {
 
 	home, err := os.UserHomeDir()
 	if err == nil {
-		dir := filepath.Join(home, Setting.Path.DefaultDir)
+		dir := filepath.Join(home, defaultDir)
 		if isDataRepository(dir) {
 			return dir, nil
 		}
@@ -129,24 +135,24 @@ func resolveDotfilesDir() (string, error) {
 // isDataRepository は .infra-version ファイルの存在でデータリポジトリかどうかを判定する。
 // ただの Git リポジトリと区別するためのマーカー。ディレクトリの場合は false。
 func isDataRepository(dir string) bool {
-	info, err := os.Stat(filepath.Join(dir, Setting.Path.InfraVersionFile))
+	info, err := os.Stat(filepath.Join(dir, infraVersionFile))
 	return err == nil && !info.IsDir()
 }
 
 // loadConfig は確定済みのディレクトリから sync.toml と .infra-version を読み、
 // エンジンバージョンと合わせて Config を組み立てる。
 func loadConfig(dir, engineVersion string) (*Config, error) {
-	syncConfig, err := loadSyncConfig(filepath.Join(dir, Setting.Path.SyncConfigFile))
+	syncConfig, err := loadSyncConfig(filepath.Join(dir, syncConfigFile))
 	if err != nil {
-		return nil, fmt.Errorf("%sを読み込めません: %w", Setting.Path.SyncConfigFile, err)
+		return nil, fmt.Errorf("%sを読み込めません: %w", syncConfigFile, err)
 	}
 	if err := validateDefaultBranch(dir, syncConfig.DefaultBranch); err != nil {
 		return nil, err
 	}
 
-	versionBytes, err := os.ReadFile(filepath.Join(dir, Setting.Path.InfraVersionFile))
+	versionBytes, err := os.ReadFile(filepath.Join(dir, infraVersionFile))
 	if err != nil {
-		return nil, fmt.Errorf("%sを読み込めません: %w", Setting.Path.InfraVersionFile, err)
+		return nil, fmt.Errorf("%sを読み込めません: %w", infraVersionFile, err)
 	}
 
 	config := &Config{

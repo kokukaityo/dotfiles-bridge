@@ -18,6 +18,8 @@ import (
 
 // LinkConfig は link.toml の構造: OSキー → ソースファイル名 → ターゲットパスのリスト。
 // 1つのソースに複数ターゲットを指定できる（例: 同じ settings.json を VS Code と Cursor に配置）。
+var linkConfigFile = Setting.Path.LinkConfigFile
+
 type LinkConfig map[string]map[string][]string
 
 func loadLinkConfig(path string) (LinkConfig, error) {
@@ -36,7 +38,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 		return err
 	}
 
-	matches, err := filepath.Glob(filepath.Join(config.DotfilesDir, "*", Setting.Path.LinkConfigFile))
+	matches, err := filepath.Glob(filepath.Join(config.DotfilesDir, "*", linkConfigFile))
 	if err != nil {
 		return fmt.Errorf("link.tomlの検索に失敗しました: %w", err)
 	}
