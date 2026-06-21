@@ -8,8 +8,8 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	dir := t.TempDir()
-	writeTestFile(t, filepath.Join(dir, ".infra-version"), "1.2.0\n")
-	writeTestFile(t, filepath.Join(dir, "sync.toml"), `
+	writeTestFile(t, filepath.Join(dir, Setting.Path.InfraVersionFile), "1.2.0\n")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), `
 default_branch = "develop"
 auto = ["editor"]
 manual = ["shell"]
@@ -30,8 +30,8 @@ ignore = ["raw"]
 
 func TestLoadConfigRejectsInvalidBranch(t *testing.T) {
 	dir := t.TempDir()
-	writeTestFile(t, filepath.Join(dir, ".infra-version"), "1.0.0")
-	writeTestFile(t, filepath.Join(dir, "sync.toml"), `default_branch = "bad branch"`)
+	writeTestFile(t, filepath.Join(dir, Setting.Path.InfraVersionFile), "1.0.0")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), `default_branch = "bad branch"`)
 
 	if _, err := loadConfig(dir, "1.0.0"); err == nil {
 		t.Fatal("不正なブランチ名が受理された")

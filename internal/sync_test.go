@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -29,7 +30,7 @@ func TestGenerateCommitMsg(t *testing.T) {
 
 func TestGenerateGitignorePreservesManualSection(t *testing.T) {
 	dir := t.TempDir()
-	writeTestFile(t, filepath.Join(dir, ".gitignore"), "manual/\n"+gitignoreMarkerStart+"\nold\n")
+	writeTestFile(t, filepath.Join(dir, ".gitignore"), "manual/\n"+Setting.Gitignore.MarkerStart+"\nold\n")
 	config := &Config{
 		DotfilesDir: dir,
 		Sync:        SyncConfig{Ignore: []string{"raw"}},
@@ -43,7 +44,7 @@ func TestGenerateGitignorePreservesManualSection(t *testing.T) {
 		t.Fatal(err)
 	}
 	content := string(data)
-	for _, expected := range []string{"manual/", "raw/", ".dotfile-hook/", gitignoreMarkerEnd} {
+	for _, expected := range []string{"manual/", "raw/", Setting.Path.HookDir + "/", Setting.Gitignore.MarkerEnd} {
 		if !strings.Contains(content, expected) {
 			t.Fatalf(".gitignoreに%qがない:\n%s", expected, content)
 		}
@@ -104,8 +105,8 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	runGit(t, first, "config", "user.name", "dotfile test")
 	runGit(t, first, "config", "user.email", "dotfile@example.invalid")
 	runGit(t, first, "remote", "add", "origin", remote)
-	writeTestFile(t, filepath.Join(first, ".infra-version"), "1.0.0")
-	writeTestFile(t, filepath.Join(first, "sync.toml"), "default_branch = \"develop\"\nauto = [\"editor\"]\nmanual = []\nignore = []\n")
+	writeTestFile(t, filepath.Join(first, Setting.Path.InfraVersionFile), "1.0.0")
+	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "default_branch = \"develop\"\nauto = [\"editor\"]\nmanual = []\nignore = []\n")
 	writeTestFile(t, filepath.Join(first, "editor", "settings.json"), "one")
 	runGit(t, first, "add", "-A")
 	runGit(t, first, "commit", "-m", "initial")
@@ -147,11 +148,11 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(first, "editor")); !os.IsNotExist(err) {
 		t.Fatalf("category still exists: %v", err)
 	}
-	updated, err := loadSyncConfig(filepath.Join(first, "sync.toml"))
+	updated, err := loadSyncConfig(filepath.Join(first, Setting.Path.SyncConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if contains(updated.Auto, "editor") {
+	if slices.Contains(updated.Auto, "editor") {
 		t.Fatal("deleted category remains in sync.toml")
 	}
 }
