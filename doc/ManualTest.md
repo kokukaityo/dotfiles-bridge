@@ -26,16 +26,22 @@ cp -r ~/.codex ~/.codex.bak
 cp -r ~/.agents ~/.agents.bak
 ```
 
-### ビルド & PATH 設定
+### 実行方法
+
+WDAC 環境ではビルド済みバイナリの直接実行がブロックされるため、`make exe-<subcommand>` で `go run` 経由で実行する。
 
 ```bash
 cd /d/work/dotfile/work
-make build
-# → dist/dotfile.exe が生成される
 
-# テスト中は絶対パスか、PATH に追加して使う
-export PATH="/d/work/dotfile/work/dist:$PATH"
-# これで "dotfile" コマンドとして使える
+# 例: init
+make exe-init ~/dotfiles-test
+
+# 例: link
+make exe-link
+
+# デフォルトで DOTFILES_DIR=~/dotfiles-test が設定される。
+# 別のパスを使う場合は明示指定：
+# make exe-link DOTFILES_DIR=~/my-dotfiles
 ```
 
 ### Windows 開発者モード
@@ -49,7 +55,7 @@ export PATH="/d/work/dotfile/work/dist:$PATH"
 ### A. init
 
 ```bash
-dotfile init ~/dotfiles-test
+make exe-init ~/dotfiles-test
 ```
 
 **確認：**
@@ -62,15 +68,14 @@ dotfile init ~/dotfiles-test
 - [ ] `.gitignore` にマーカー行と自動生成セクションがある
 - [ ] `git log` → `feat: initial dotfiles setup` の初回コミット
 - [ ] `.backup/` ディレクトリが存在する
+- [ ] 元のファイルが `.backup/ai-agent_<timestamp>/` に退避されている（init が内部で link を実行するため）
+- [ ] symlink が配置されている（`~/.claude/CLAUDE.md` → `~/dotfiles-test/ai-agent/AGENTS.md` 等）
 
 ### B. link
 
 ```bash
-cd ~/dotfiles-test
-dotfile link
+make exe-link
 ```
-
-> **環境変数は不要。** `cd` でデータリポジトリに入れば、git root + `.infra-version` の存在で自動検出される。
 
 **確認：**
 
@@ -84,8 +89,7 @@ dotfile link
 ### C. status
 
 ```bash
-cd ~/dotfiles-test
-dotfile status
+make exe-status
 ```
 
 **確認：**
@@ -95,7 +99,7 @@ dotfile status
 ### D. version
 
 ```bash
-dotfile version
+make exe-version
 ```
 
 **確認：**
@@ -105,10 +109,9 @@ dotfile version
 ### E. gitignore
 
 ```bash
-cd ~/dotfiles-test
-# sync.toml を編集して ignore に追加
+# ~/dotfiles-test/sync.toml を編集して ignore に追加
 # ignore = ["backup", "raw", "secret-stuff"]
-dotfile gitignore
+make exe-gitignore
 ```
 
 **確認：**
@@ -129,10 +132,11 @@ gh repo create dotfiles-test --private
 cd ~/dotfiles-test
 git remote add origin git@github.com:kokukaityo/dotfiles-test.git
 git push -u origin main
+cd /d/work/dotfile/work
 
 # ファイルを変更して push
-echo "test change" >> ai-agent/AGENTS.md
-dotfile push
+echo "test change" >> ~/dotfiles-test/ai-agent/AGENTS.md
+make exe-push
 ```
 
 **確認：**
@@ -146,7 +150,7 @@ dotfile push
 ```bash
 mkdir -p ~/dotfiles-test/experiment
 echo "test" > ~/dotfiles-test/experiment/note.txt
-dotfile push
+make exe-push
 ```
 
 **確認：**
@@ -166,8 +170,8 @@ echo "remote change" >> ai-agent/AGENTS.md
 git add -A && git commit -m "remote update" && git push
 
 # 元のリポジトリで pull
-cd ~/dotfiles-test
-dotfile pull
+cd /d/work/dotfile/work
+make exe-pull
 ```
 
 **確認：**
@@ -178,8 +182,7 @@ dotfile pull
 ### H. 2台目セットアップ（clone → setup）
 
 ```bash
-cd ~/dotfiles-test-clone
-dotfile setup
+make exe-setup DOTFILES_DIR=~/dotfiles-test-clone
 ```
 
 > link のターゲットが1台目と同じパスを指すので、symlink が上書きされる。
@@ -210,7 +213,8 @@ echo "conflict from local" >> ai-agent/AGENTS.md
 git add -A && git commit -m "conflict local"
 
 # 3. pull → コンフリクト処理が発動
-dotfile pull
+cd /d/work/dotfile/work
+make exe-pull
 ```
 
 **確認：**
@@ -240,7 +244,8 @@ git cherry-pick <conflict-branch の commit hash>
 git branch -D conflict/<hostname>/<timestamp>
 
 # 次の pull でマーカーが自動で消える
-dotfile pull
+cd /d/work/dotfile/work
+make exe-pull
 ```
 
 **確認：**
@@ -256,6 +261,7 @@ cd ~/dotfiles-test
 echo "<<<<<<< HEAD" >> ai-agent/AGENTS.md
 git add -A && git commit -m "bad marker"
 git push origin main
+# ※ pre-push hook のテストなので git push を直接使う
 ```
 
 **確認：**
@@ -276,6 +282,7 @@ cd ~/dotfiles-test
 echo 'api_key = "sk-abc123def456"' >> ai-agent/AGENTS.md
 git add -A && git commit -m "secret leak"
 git push origin main
+# ※ pre-push hook のテストなので git push を直接使う
 ```
 
 **確認：**
@@ -297,17 +304,21 @@ git checkout -- ai-agent/AGENTS.md
 ### L. delete-category
 
 ```bash
-cd ~/dotfiles-test
-
 # テスト用カテゴリを作成
-mkdir throwaway
-echo "test" > throwaway/file.txt
+mkdir -p ~/dotfiles-test/throwaway
+echo "test" > ~/dotfiles-test/throwaway/file.txt
 
-# sync.toml の auto に追加: auto = ["ai-agent", "editor", "shell", "throwaway"]
-dotfile push
+# sync.toml の auto に throwaway を追加してコミット
+cd ~/dotfiles-test
+sed -i 's/auto = \["ai-agent", "editor", "shell"\]/auto = ["ai-agent", "editor", "shell", "throwaway"]/' sync.toml
+git add sync.toml throwaway/ && git commit -m "chore: add throwaway category"
+cd /d/work/dotfile/work
+
+# コミット済み変更も含めて push
+make exe-push
 
 # 削除
-dotfile delete-category throwaway
+make exe-delete-category throwaway
 ```
 
 **確認：**

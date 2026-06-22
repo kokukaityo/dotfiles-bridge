@@ -19,3 +19,11 @@ bats: build
 
 clean:
 	rm -rf dist/
+
+ifneq (,$(filter exe-%,$(MAKECMDGOALS)))
+  EXE_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(EXE_ARGS):;@:)
+endif
+
+exe-%:
+	DOTFILES_DIR=$(or $(DOTFILES_DIR),$$HOME/dotfiles-test) GOTMPDIR=$(CURDIR)/dist go run ./cmd $* $(EXE_ARGS)
