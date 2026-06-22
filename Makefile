@@ -12,7 +12,7 @@ fmt:
 	gofumpt -w .
 
 test:
-	go test ./...
+	GOTMPDIR=$(CURDIR)/dist go test ./...
 
 bats: build
 	npx bats test/bats/
