@@ -98,7 +98,9 @@ func Status(config *Config, stdout io.Writer) error {
 		_, _ = fmt.Fprintf(stdout, "  Run: cd %s && git log --oneline --graph --all\n", config.DotfilesDir)
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "")
-	} else if !os.IsNotExist(err) {
+	} else if os.IsNotExist(err) {
+		_, _ = fmt.Fprintln(stdout, "[status] No conflicts.")
+	} else {
 		return fmt.Errorf("コンフリクト状態を確認できません: %w", err)
 	}
 	return nil
