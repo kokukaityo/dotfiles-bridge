@@ -256,23 +256,31 @@ func Push(config *Config, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if changed == "" {
+	if changed != "" {
+		message, err := generateCommitMsg(git, autoPaths)
+		if err != nil {
+			return err
+		}
+		commitArgs := append([]string{"commit", "--only", "-m", message, "--"}, autoPaths...)
+		if err := git.Run(commitArgs...); err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(stdout, "[sync] Committed: %s\n", message)
+	}
+
+	unpushed, err := git.Output("log", "origin/"+config.Sync.DefaultBranch+"..HEAD", "--oneline")
+	if err != nil {
+		unpushed = ""
+	}
+	if unpushed == "" {
 		_, _ = fmt.Fprintln(stdout, "[sync] 自動同期カテゴリに変更はありません。")
 		return nil
 	}
 
-	message, err := generateCommitMsg(git, autoPaths)
-	if err != nil {
-		return err
-	}
-	commitArgs := append([]string{"commit", "--only", "-m", message, "--"}, autoPaths...)
-	if err := git.Run(commitArgs...); err != nil {
-		return err
-	}
 	if err := git.Run("push", "origin", config.Sync.DefaultBranch); err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(stdout, "[sync] Pushed: %s\n", message)
+	_, _ = fmt.Fprintln(stdout, "[sync] Pushed to origin.")
 	return nil
 }
 
