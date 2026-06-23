@@ -67,9 +67,6 @@ make exe-init ~/dotfiles-test
 - [ ] `.dotfile-hook/pre-push`, `.dotfile-hook/post-merge` が存在
 - [ ] `.gitignore` にマーカー行と自動生成セクションがある
 - [ ] `git log` → `feat: initial dotfiles setup` の初回コミット
-- [ ] `.backup/` ディレクトリが存在する
-- [ ] 元のファイルが `.backup/ai-agent_<timestamp>/` に退避されている（init が内部で link を実行するため）
-- [ ] symlink が配置されている（`~/.claude/CLAUDE.md` → `~/dotfiles-test/ai-agent/AGENTS.md` 等）
 
 ### B. link
 
@@ -179,10 +176,10 @@ make exe-pull
 - [ ] `[sync] Fast-forwarded to origin/main.` と表示
 - [ ] ローカルに変更が反映されている
 
-### H. 2台目セットアップ（clone → setup）
+### H. 2台目セットアップ（clone → install）
 
 ```bash
-make exe-setup DOTFILES_DIR=~/dotfiles-test-clone
+make exe-install DOTFILES_DIR=~/dotfiles-test-clone
 ```
 
 > link のターゲットが1台目と同じパスを指すので、symlink が上書きされる。

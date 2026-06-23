@@ -39,7 +39,7 @@ git push -u origin main
 ```bash
 git clone git@github.com:<user>/<repo>.git ~/dotfiles
 export DOTFILES_DIR="$HOME/dotfiles"
-dotfile setup
+dotfile install
 ```
 
 シェル起動時に同期する場合:
@@ -55,7 +55,7 @@ command -v dotfile >/dev/null && dotfile status
 | コマンド                         | 説明                                          |
 | -------------------------------- | --------------------------------------------- |
 | `dotfile init [path]`            | データリポジトリを作成。既定値は `~/dotfiles` |
-| `dotfile setup`                  | hooks、gitignore、symlinkを設定               |
+| `dotfile install`                | hooks、gitignore設定とsymlink配置             |
 | `dotfile link`                   | OSに応じたsymlinkを配置                       |
 | `dotfile pull`                   | リモートから同期                              |
 | `dotfile push`                   | autoカテゴリの変更をcommitしてpush            |

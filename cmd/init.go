@@ -6,8 +6,8 @@ import (
 )
 
 // initCommand はデータリポジトリをゼロから新規作成する。
-// テンプレート展開 → git init → setup → 初回コミットまで一括実行。
-// 既存リポジトリへの適用は setupCommand の役割。
+// テンプレート展開 → git init → SetupRepository → 初回コミットまで一括実行。
+// 既存リポジトリへの適用は installCommand の役割。
 func (a *application) initCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init [path]",
