@@ -35,6 +35,110 @@ func loadLinkConfig(path string) (LinkConfig, error) {
 
 // LinkAll は全カテゴリの link.toml を走査し、現在の OS に該当するセクションだけ処理する。
 // 他 OS のセクションは無視されるので、1つの link.toml に全 OS 分を書ける。
+// backupSubPath は同一ソースの複数ターゲットでバックアップが衝突しないよう、
+// 最小限の親ディレクトリ名を付加したサブパスを返す。
+func backupSubPath(targets []string) map[string]string {
+	result := make(map[string]string, len(targets))
+
+	groups := map[string][]string{}
+	for _, t := range targets {
+		base := filepath.Base(t)
+		groups[base] = append(groups[base], t)
+	}
+
+	for base, paths := range groups {
+		if len(paths) == 1 {
+			result[paths[0]] = base
+			continue
+		}
+
+		components := make([][]string, len(paths))
+		for i, p := range paths {
+			dir := filepath.Dir(p)
+			var parts []string
+			for {
+				parent := filepath.Dir(dir)
+				if parent == dir {
+					break
+				}
+				parts = append(parts, filepath.Base(dir))
+				dir = parent
+			}
+			components[i] = parts
+		}
+
+		maxDepth := 0
+		for _, c := range components {
+			if len(c) > maxDepth {
+				maxDepth = len(c)
+			}
+		}
+
+		found := false
+		for depth := 0; depth < maxDepth; depth++ {
+			seen := map[string]bool{}
+			allUnique := true
+			for i := range paths {
+				var key string
+				if depth < len(components[i]) {
+					key = components[i][depth]
+				} else {
+					key = paths[i]
+				}
+				if seen[key] {
+					allUnique = false
+					break
+				}
+				seen[key] = true
+			}
+			if allUnique {
+				for i, p := range paths {
+					if depth < len(components[i]) {
+						result[p] = filepath.Join(components[i][depth], base)
+					} else {
+						result[p] = filepath.Join(paths[i], base)
+					}
+				}
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			suffixes := make([]string, len(paths))
+			for i := range suffixes {
+				suffixes[i] = base
+			}
+			for depth := 0; depth < maxDepth; depth++ {
+				for i := range paths {
+					if depth < len(components[i]) {
+						suffixes[i] = filepath.Join(components[i][depth], suffixes[i])
+					}
+				}
+				seen := map[string]bool{}
+				allUnique := true
+				for _, s := range suffixes {
+					if seen[s] {
+						allUnique = false
+						break
+					}
+					seen[s] = true
+				}
+				if allUnique {
+					for i, p := range paths {
+						result[p] = suffixes[i]
+					}
+					found = true
+					break
+				}
+			}
+		}
+
+	}
+
+	return result
+}
+
 func LinkAll(config *Config, stdout io.Writer) error {
 	osKey, err := OSKey()
 	if err != nil {
@@ -81,12 +185,24 @@ func LinkAll(config *Config, stdout io.Writer) error {
 			if err != nil {
 				return fmt.Errorf("リンク元を解決できません: %w", err)
 			}
+
+			targetPaths := make([]string, 0, len(entries[source]))
+			seen := map[string]bool{}
 			for _, target := range entries[source] {
-				targetPath, err := ExpandPath(strings.TrimSuffix(target, "/"))
+				p, err := ExpandPath(strings.TrimSuffix(target, "/"))
 				if err != nil {
 					return err
 				}
-				if err := createLink(sourcePath, targetPath, categoryBackupDir, stdout); err != nil {
+				if seen[p] {
+					return fmt.Errorf("ターゲットパスが重複しています: %s", p)
+				}
+				seen[p] = true
+				targetPaths = append(targetPaths, p)
+			}
+			subPaths := backupSubPath(targetPaths)
+			for _, targetPath := range targetPaths {
+				bkPath := filepath.Join(categoryBackupDir, subPaths[targetPath])
+				if err := createLink(sourcePath, targetPath, bkPath, stdout); err != nil {
 					return err
 				}
 			}
@@ -96,7 +212,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 	return nil
 }
 
-func createLink(source, target, backupBaseDir string, stdout io.Writer) error {
+func createLink(source, target, backupPath string, stdout io.Writer) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("リンク先ディレクトリを作成できません: %w", err)
 	}
@@ -110,10 +226,9 @@ func createLink(source, target, backupBaseDir string, stdout io.Writer) error {
 			}
 		}
 
-		if err := os.MkdirAll(backupBaseDir, 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(backupPath), 0o755); err != nil {
 			return fmt.Errorf("バックアップディレクトリを作成できません: %w", err)
 		}
-		backupPath := filepath.Join(backupBaseDir, filepath.Base(target))
 		if err := os.Rename(target, backupPath); err != nil {
 			return fmt.Errorf("既存ファイルをバックアップできません (%s): %w", target, err)
 		}
