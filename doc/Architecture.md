@@ -10,7 +10,7 @@ dotfile engine
 │   ├── main.go          エントリポイントと終了コード
 │   ├── root.go          Cobraルートコマンド、application struct
 │   ├── init.go          initサブコマンド
-│   ├── setup.go         setupサブコマンド
+│   ├── install.go       installサブコマンド
 │   ├── link.go          linkサブコマンド
 │   ├── sync.go          pull / pushサブコマンド
 │   ├── status.go        status / delete-category / gitignoreサブコマンド

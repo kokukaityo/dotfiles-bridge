@@ -1,6 +1,6 @@
 // setup.go はデータリポジトリの初期化（init）と既存リポジトリへの設定適用（setup）を担当する。
 // init: テンプレート展開 → git init → SetupRepository → 初回コミット の一連フロー。
-// setup: clone 済みリポジトリに hooks・gitattributes・gitignore・symlink を適用するフロー。
+// setup: clone 済みリポジトリに hooks・gitattributes・gitignore を適用するフロー。symlink 配置は link.go が担当する。
 package engine
 
 import (
@@ -97,8 +97,8 @@ func extractTemplate(templateFS fs.FS, target string) error {
 	})
 }
 
-// SetupRepository は dotfile setup のフロー。InitializeRepository からも呼ばれる共通処理。
-// hooks 展開 → core.hooksPath 設定 → gitattributes → gitignore 生成 → symlink 配置 の順。
+// SetupRepository はリポジトリ設定の適用フロー。InitializeRepository からも呼ばれる共通処理。
+// hooks 展開 → core.hooksPath 設定 → gitattributes → gitignore 生成 の順。symlink 配置は含まない。
 func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout}
 	if !git.Success("rev-parse", "--git-dir") {
@@ -117,9 +117,6 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 		return err
 	}
 	if err := GenerateGitignore(config); err != nil {
-		return err
-	}
-	if err := LinkAll(config, stdout); err != nil {
 		return err
 	}
 	_, _ = fmt.Fprintln(stdout, "[dotfile] Setup complete.")

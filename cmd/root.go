@@ -35,7 +35,7 @@ func (a *application) rootCommand() *cobra.Command {
 
 	root.AddCommand(
 		a.initCommand(),
-		a.setupCommand(),
+		a.installCommand(),
 		a.linkCommand(),
 		a.pullCommand(),
 		a.pushCommand(),
