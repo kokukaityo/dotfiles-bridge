@@ -107,6 +107,7 @@ create_data_repo() {
 
   cat > "$repo/sync.toml" <<TOML
 default_branch = "$branch"
+mode = "local"
 auto = ["editor"]
 manual = []
 ignore = ["backup"]
@@ -120,6 +121,11 @@ TOML
   git -C "$repo" commit -m "initial" --quiet
 
   export DOTFILES_DIR="$repo"
+}
+
+enable_remote_mode() {
+  local repo="${1:-$DOTFILES_DIR}"
+  sed -i 's/mode = "local"/mode = "remote"/' "$repo/sync.toml"
 }
 
 create_bare_remote() {

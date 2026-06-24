@@ -12,6 +12,7 @@ teardown() {
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   local second="$TEST_TEMP_DIR/second"
   git clone "$bare" "$second" --quiet
@@ -34,6 +35,7 @@ teardown() {
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   run dotfile pull
   assert_success
@@ -45,6 +47,7 @@ teardown() {
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   echo "local change" > "$DOTFILES_DIR/editor/local.txt"
   git -C "$DOTFILES_DIR" add -A

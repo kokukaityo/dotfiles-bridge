@@ -12,6 +12,7 @@ teardown() {
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   echo "data" > "$DOTFILES_DIR/editor/settings.json"
   git -C "$DOTFILES_DIR" add -A
@@ -23,7 +24,7 @@ teardown() {
 
   run dotfile delete-category editor
   assert_success
-  assert_output --partial "カテゴリを削除してpush"
+  assert_output --partial "カテゴリを削除しました"
 
   assert_file_not_exists "$DOTFILES_DIR/editor"
 
@@ -48,6 +49,7 @@ teardown() {
   echo "manual content" > "$DOTFILES_DIR/docs/guide.md"
   cat > "$DOTFILES_DIR/sync.toml" <<TOML
 default_branch = "main"
+mode = "remote"
 auto = ["editor"]
 ignore = ["backup"]
 TOML
@@ -60,7 +62,7 @@ TOML
 
   run dotfile delete-category docs
   assert_success
-  assert_output --partial "カテゴリを削除してpush"
+  assert_output --partial "カテゴリを削除しました"
 
   assert_file_not_exists "$DOTFILES_DIR/docs"
 
@@ -77,6 +79,7 @@ TOML
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   # .gitignore を生成して commit
   run dotfile gitignore
@@ -94,7 +97,7 @@ TOML
 
   run dotfile delete-category backup
   assert_success
-  assert_output --partial "カテゴリを削除してpush"
+  assert_output --partial "カテゴリを削除しました"
 
   assert_file_not_exists "$DOTFILES_DIR/backup"
 
@@ -117,6 +120,7 @@ TOML
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   mkdir -p "$DOTFILES_DIR/orphan"
   echo "orphan data" > "$DOTFILES_DIR/orphan/file.txt"
@@ -129,7 +133,7 @@ TOML
 
   run dotfile delete-category orphan
   assert_success
-  assert_output --partial "カテゴリを削除してpush"
+  assert_output --partial "カテゴリを削除しました"
 
   assert_file_not_exists "$DOTFILES_DIR/orphan"
 
@@ -138,7 +142,7 @@ TOML
   [[ "$((after_count - before_count))" -eq 1 ]] || fail "expected exactly 1 new commit"
 
   run git -C "$DOTFILES_DIR" log -1 --format=%s
-  assert_output "delete: category orphan"
+  assert_output "delete: manual category orphan"
 }
 
 @test "delete-category: 存在しないカテゴリはエラー" {
@@ -146,6 +150,7 @@ TOML
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   run dotfile delete-category nonexistent
   assert_failure
@@ -157,6 +162,7 @@ TOML
   local bare="$TEST_TEMP_DIR/remote.git"
   create_bare_remote "$bare"
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
+  enable_remote_mode
 
   run dotfile delete-category "../escape"
   assert_failure
