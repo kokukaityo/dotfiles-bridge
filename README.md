@@ -90,11 +90,13 @@ command -v dotfile >/dev/null && dotfile status
 ### sync.toml
 
 ```toml
+mode = "local"
 default_branch = "main"
 auto = ["ai-agent", "editor", "shell"]
 ignore = ["backup", "raw"]
 ```
 
+- `mode`: `"local"`（デフォルト）または `"remote"`。local はコミットのみ、remote は origin との同期も行う
 - `default_branch`: pull、push、カテゴリ削除で使用するブランチ
 - `auto`: `dotfile push` の対象
 - `ignore`: 自動生成される `.gitignore` に追加するカテゴリ

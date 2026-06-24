@@ -48,6 +48,26 @@ func TestVersionMismatch(t *testing.T) {
 	}
 }
 
+func TestLoadSyncConfigDefaultsToLocalMode(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sync.toml")
+	writeTestFile(t, path, `default_branch = "main"`)
+	config, err := loadSyncConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Mode != "local" {
+		t.Fatalf("Mode = %q, want %q", config.Mode, "local")
+	}
+}
+
+func TestLoadSyncConfigRejectsInvalidMode(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sync.toml")
+	writeTestFile(t, path, `mode = "invalid"`)
+	if _, err := loadSyncConfig(path); err == nil {
+		t.Fatal("invalid mode should be rejected")
+	}
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

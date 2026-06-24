@@ -113,6 +113,10 @@ func Status(config *Config, stdout io.Writer) error {
 //  4. 分岐: ローカルを conflict/<host>/<timestamp> ブランチに退避し、
 //     デフォルトブランチをリモートに合わせる。自動 merge はしない安全設計。
 func Pull(config *Config, stdout, stderr io.Writer) error {
+	if config.Sync.Mode == "local" {
+		_, _ = fmt.Fprintln(stdout, "[sync] localモードのためpullをスキップします。")
+		return nil
+	}
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout, Stderr: stderr}
 	if err := clearResolvedConflictMarker(config, git, stdout); err != nil {
 		return err
@@ -266,6 +270,10 @@ func Push(config *Config, stdout, stderr io.Writer) error {
 			return err
 		}
 		_, _ = fmt.Fprintf(stdout, "[sync] Committed: %s\n", message)
+	}
+
+	if config.Sync.Mode == "local" {
+		return nil
 	}
 
 	unpushed, err := git.Output("log", "origin/"+config.Sync.DefaultBranch+"..HEAD", "--oneline")
@@ -425,10 +433,12 @@ func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) e
 	if err := git.Run(args...); err != nil {
 		return err
 	}
-	if err := git.Run("push", "origin", config.Sync.DefaultBranch); err != nil {
-		return fmt.Errorf("pushに失敗しました。削除commitはローカルに残っています: %w", err)
+	if config.Sync.Mode == "remote" {
+		if err := git.Run("push", "origin", config.Sync.DefaultBranch); err != nil {
+			return fmt.Errorf("pushに失敗しました。削除commitはローカルに残っています: %w", err)
+		}
 	}
-	_, _ = fmt.Fprintf(stdout, "[sync] カテゴリを削除してpushしました: %s\n", category)
+	_, _ = fmt.Fprintf(stdout, "[sync] カテゴリを削除しました: %s\n", category)
 	return nil
 }
 

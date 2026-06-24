@@ -105,7 +105,7 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	runGit(t, first, "config", "user.email", "dotfile@example.invalid")
 	runGit(t, first, "remote", "add", "origin", remote)
 	writeTestFile(t, filepath.Join(first, Setting.Path.InfraVersionFile), "1.0.0")
-	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "default_branch = \"develop\"\nauto = [\"editor\"]\nignore = []\n")
+	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "mode = \"remote\"\ndefault_branch = \"develop\"\nauto = [\"editor\"]\nignore = []\n")
 	writeTestFile(t, filepath.Join(first, "editor", "settings.json"), "one")
 	runGit(t, first, "add", "-A")
 	runGit(t, first, "commit", "-m", "initial")
@@ -154,6 +154,51 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	}
 	if slices.Contains(updated.Auto, "editor") {
 		t.Fatal("deleted category remains in sync.toml")
+	}
+}
+
+func TestPushLocalModeSkipsPush(t *testing.T) {
+	dir := newTestRepository(t, "main")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.InfraVersionFile), "1.0.0")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\nauto = [\"editor\"]\n")
+	writeTestFile(t, filepath.Join(dir, "editor", "file.txt"), "hello")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-m", "initial")
+
+	EngineVersion = "1.0.0"
+	config, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Sync.Mode != "local" {
+		t.Fatalf("expected mode=local, got %q", config.Sync.Mode)
+	}
+
+	writeTestFile(t, filepath.Join(dir, "editor", "file.txt"), "updated")
+	var stdout, stderr bytes.Buffer
+	if err := Push(config, &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+
+	log := runGit(t, dir, "log", "--oneline", "-1")
+	if !strings.Contains(log, "update: file.txt") {
+		t.Fatalf("commit not created: %s", log)
+	}
+	if strings.Contains(stdout.String(), "Pushed to origin") {
+		t.Fatal("push should not happen in local mode")
+	}
+}
+
+func TestPullLocalModeSkips(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	config := &Config{
+		Sync: SyncConfig{Mode: "local"},
+	}
+	if err := Pull(config, &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "localモード") {
+		t.Fatalf("expected local mode message, got: %s", stdout.String())
 	}
 }
 

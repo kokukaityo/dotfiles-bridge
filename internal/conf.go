@@ -79,6 +79,7 @@ var (
 // SyncConfig は sync.toml をそのまま構造体にしたもの。
 // カテゴリの同期モード（auto/ignore、どちらにも属さないカテゴリは manual 扱い）とブランチ設定を保持する。
 type SyncConfig struct {
+	Mode          string   `toml:"mode"`
 	DefaultBranch string   `toml:"default_branch"`
 	Auto          []string `toml:"auto"`
 	Ignore        []string `toml:"ignore"`
@@ -170,8 +171,16 @@ func loadConfig(dir string) (*Config, error) {
 
 func loadSyncConfig(path string) (SyncConfig, error) {
 	var config SyncConfig
-	_, err := toml.DecodeFile(path, &config)
-	return config, err
+	if _, err := toml.DecodeFile(path, &config); err != nil {
+		return config, err
+	}
+	if config.Mode == "" {
+		config.Mode = "local"
+	}
+	if config.Mode != "local" && config.Mode != "remote" {
+		return config, fmt.Errorf("sync.tomlのmodeは\"local\"か\"remote\"のみ有効です: %q", config.Mode)
+	}
+	return config, nil
 }
 
 // validateDefaultBranch は git check-ref-format でブランチ名の安全性を検証する。
