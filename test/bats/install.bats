@@ -7,16 +7,16 @@ teardown() {
   _common_teardown
 }
 
-@test "setup: clone 済みリポジトリに設定を適用" {
+@test "install: clone 済みリポジトリに設定を適用" {
   create_data_repo
-  run dotfile setup
+  run dotfile install
   assert_success
   assert_output --partial "Setup complete."
 }
 
-@test "setup: hooks と git 設定が適用される" {
+@test "install: hooks と git 設定が適用される" {
   create_data_repo
-  dotfile setup
+  dotfile install
 
   assert_file_exists "$DOTFILES_DIR/.dotfile-hook/pre-push"
   assert_file_exists "$DOTFILES_DIR/.dotfile-hook/post-merge"
@@ -28,9 +28,9 @@ teardown() {
   assert_file_contains "$DOTFILES_DIR/.gitignore" 'auto-generated from sync.toml'
 }
 
-@test "setup: 冪等に実行できる" {
+@test "install: 冪等に実行できる" {
   create_data_repo
-  dotfile setup
-  run dotfile setup
+  dotfile install
+  run dotfile install
   assert_success
 }

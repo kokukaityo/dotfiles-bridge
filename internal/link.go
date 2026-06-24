@@ -1,5 +1,5 @@
 // link.go は link.toml に基づく symlink の配置を担当する。
-// SetupRepository (setup) と linkCommand (link) の両方から呼ばれる。
+// installCommand (install) と linkCommand (link) の両方から呼ばれる。
 // ユーザーのファイルを直接操作するため、既存ファイルのバックアップと
 // 同一リンク済みのスキップで安全性を担保する。
 package engine

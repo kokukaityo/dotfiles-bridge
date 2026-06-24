@@ -14,7 +14,7 @@ export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
 ### 2. 初期設定
 
 ```bash
-dotfiles setup
+dotfiles install
 ```
 
 ### 3. シェル起動時の自動同期（任意）
