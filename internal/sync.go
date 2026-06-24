@@ -28,6 +28,73 @@ var (
 
 var categoryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
 
+func validateSyncConfigCategories(config SyncConfig) error {
+	if err := validateCategoryList("auto", config.Auto); err != nil {
+		return err
+	}
+	if err := validateCategoryList("ignore", config.Ignore); err != nil {
+		return err
+	}
+
+	auto := make(map[string]struct{}, len(config.Auto))
+	for _, category := range config.Auto {
+		auto[category] = struct{}{}
+	}
+	for _, category := range config.Ignore {
+		if _, ok := auto[category]; ok {
+			return fmt.Errorf("sync.tomlのautoとignoreに同じカテゴリがあります: %s", category)
+		}
+	}
+	return nil
+}
+
+func validateCategoryList(field string, categories []string) error {
+	seen := make(map[string]struct{}, len(categories))
+	for _, category := range categories {
+		if err := validateCategoryName(category); err != nil {
+			return fmt.Errorf("sync.tomlの%sに不正なカテゴリ名があります: %s: %w", field, category, err)
+		}
+		if _, ok := seen[category]; ok {
+			return fmt.Errorf("sync.tomlの%sに重複したカテゴリがあります: %s", field, category)
+		}
+		seen[category] = struct{}{}
+	}
+	return nil
+}
+
+func validateCategoryName(category string) error {
+	switch {
+	case category == "":
+		return fmt.Errorf("空にできません")
+	case category == "." || category == "..":
+		return fmt.Errorf(". と .. は使用できません")
+	case filepath.IsAbs(category):
+		return fmt.Errorf("絶対パスは使用できません")
+	case strings.ContainsAny(category, `/\`):
+		return fmt.Errorf("パス区切りは使用できません")
+	case !categoryNamePattern.MatchString(category):
+		return fmt.Errorf("使用できる文字は英数字、_、.、-のみで、先頭は英数字または_です")
+	case isReservedCategoryName(category):
+		return fmt.Errorf("エンジン内部で予約されている名前です")
+	default:
+		return nil
+	}
+}
+
+func isReservedCategoryName(category string) bool {
+	reserved := []string{
+		".git",
+		".gitignore",
+		Setting.Path.BackupDir,
+		Setting.Path.ConflictMarkerFile,
+		Setting.Path.HookDir,
+		Setting.Path.InfraVersionFile,
+		Setting.Path.SyncConfigFile,
+		watchPIDFile,
+	}
+	return slices.Contains(reserved, category)
+}
+
 // GenerateGitignore は .gitignore を再生成する。
 // マーカー行より上のユーザー手書き部分を保持し、マーカー以下を
 // sync.toml の ignore カテゴリやセキュリティ除外パターンから再生成する。
@@ -340,8 +407,8 @@ func generateCommitMsg(git GitRunner, paths []string) (string, error) {
 // sync.toml 更新 + カテゴリ削除 + push を1コミットにまとめるトランザクション的な処理。
 // デフォルトブランチ以外や sync.toml に未コミット変更がある場合は拒否する。
 func DeleteCategory(config *Config, category string, stdout, stderr io.Writer) error {
-	if !categoryNamePattern.MatchString(category) || category == "." || category == ".." {
-		return fmt.Errorf("不正なカテゴリ名です: %s", category)
+	if err := validateCategoryName(category); err != nil {
+		return fmt.Errorf("不正なカテゴリ名です: %s: %w", category, err)
 	}
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout, Stderr: stderr}
 	currentBranch, err := git.Output("branch", "--show-current")

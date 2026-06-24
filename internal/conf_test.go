@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -65,6 +66,74 @@ func TestLoadSyncConfigRejectsInvalidMode(t *testing.T) {
 	writeTestFile(t, path, `mode = "invalid"`)
 	if _, err := loadSyncConfig(path); err == nil {
 		t.Fatal("invalid mode should be rejected")
+	}
+}
+
+func TestLoadSyncConfigRejectsInvalidCategoryNames(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "path separator in auto",
+			content: `auto = ["../escape"]`,
+		},
+		{
+			name:    "absolute path in ignore",
+			content: `ignore = ["/tmp/secret"]`,
+		},
+		{
+			name:    "dot category",
+			content: `auto = ["."]`,
+		},
+		{
+			name:    "reserved file",
+			content: `auto = ["sync.toml"]`,
+		},
+		{
+			name:    "leading dot internal directory",
+			content: `ignore = [".backup"]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "sync.toml")
+			writeTestFile(t, path, tt.content)
+			if _, err := loadSyncConfig(path); err == nil {
+				t.Fatal("不正なカテゴリ名が受理された")
+			}
+		})
+	}
+}
+
+func TestLoadSyncConfigRejectsDuplicateCategories(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "duplicate auto",
+			content: `auto = ["editor", "editor"]`,
+		},
+		{
+			name:    "duplicate ignore",
+			content: `ignore = ["raw", "raw"]`,
+		},
+		{
+			name:    "auto ignore conflict",
+			content: "auto = [\"editor\"]\nignore = [\"editor\"]\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "sync.toml")
+			writeTestFile(t, path, tt.content)
+			if _, err := loadSyncConfig(path); err == nil || !strings.Contains(err.Error(), "カテゴリ") {
+				t.Fatal("重複カテゴリが受理された")
+			}
+		})
 	}
 }
 

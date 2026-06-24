@@ -180,6 +180,9 @@ func loadSyncConfig(path string) (SyncConfig, error) {
 	if config.Mode != "local" && config.Mode != "remote" {
 		return config, fmt.Errorf("sync.tomlのmodeは\"local\"か\"remote\"のみ有効です: %q", config.Mode)
 	}
+	if err := validateSyncConfigCategories(config); err != nil {
+		return config, err
+	}
 	return config, nil
 }
 
