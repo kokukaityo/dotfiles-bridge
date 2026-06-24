@@ -20,7 +20,7 @@ dotfile engine
 │   ├── conf.toml        エンジン内部定数（パス名、Gitキー、hookソース等）
 │   ├── git.go           gitコマンド実行
 │   ├── link.go          symlink配置
-│   ├── setup.go         initとsetup
+│   ├── setup.go         initとinstall
 │   ├── sync.go          pull、push、削除、gitignore、status
 │   ├── tool.go          OS名変換、ホーム展開、ファイル置換等のユーティリティ
 │   └── hook/
