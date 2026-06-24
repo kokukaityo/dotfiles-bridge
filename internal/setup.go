@@ -1,6 +1,6 @@
-// setup.go はデータリポジトリの初期化（init）と既存リポジトリへの設定適用（setup）を担当する。
+// setup.go はデータリポジトリの初期化（init）と既存リポジトリへの設定適用（install）を担当する。
 // init: テンプレート展開 → git init → SetupRepository → 初回コミット の一連フロー。
-// setup: clone 済みリポジトリに hooks・gitattributes・gitignore を適用するフロー。symlink 配置は link.go が担当する。
+// install: clone 済みリポジトリに hooks・gitattributes・gitignore を適用するフロー。symlink 配置は link.go が担当する。
 package engine
 
 import (
