@@ -9,7 +9,7 @@ import "embed"
 //go:embed all:template
 var TemplateFS embed.FS
 
-// Version はエンジンのバージョン文字列。dotfiles version で表示される。
+// Version は本体のバージョン文字列。dotfiles version で表示される。
 //
 //go:embed VERSION
 var Version string
