@@ -63,8 +63,7 @@ make exe-init ~/dotfiles-test
 **確認：**
 
 - [ ] `~/dotfiles-test/` が作成される
-- [ ] `.infra-version` に本体バージョンが書かれている
-- [ ] `sync.toml` が存在し、`mode`, `default_branch`, `auto`, `ignore` が設定されている
+- [ ] `sync.toml` が存在し、`version`, `mode`, `default_branch`, `auto`, `ignore` が設定されている
 - [ ] `ai-agent/link.toml`, `editor/link.toml`, `shell/link.toml` が存在
 - [ ] `.dotfiles-hook/pre-push`, `.dotfiles-hook/post-merge` が存在
 - [ ] `.gitattributes` に `* -text` が書かれている

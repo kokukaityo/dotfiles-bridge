@@ -34,7 +34,6 @@ dotfiles-bridge
 └── VERSION
 
 user data repository
-├── .infra-version
 ├── .backup/            バックアップ（中身はGit追跡対象外）
 ├── sync.toml
 └── <category>/
@@ -62,7 +61,7 @@ import path: `github.com/kokukaityo/dotfiles-bridge/internal`（package名 `engi
 `sync.toml` の `mode` はデフォルト `"local"`。`"remote"` を明示した場合のみ origin との同期を行う。
 `sync.toml` の `default_branch` は空値を禁止し、`git check-ref-format --branch` で検証する。
 `auto` / `ignore` のカテゴリ名は読み込み時に検証し、重複、相互衝突、パス区切り、絶対パス、内部予約名を拒否する。
-本体とデータの `.infra-version` はメジャーバージョンを比較し、不一致時は警告する。
+`sync.toml` の `version` フィールドに `init` 時の本体バージョンを記録する（現在はチェックしない）。
 
 ### Git
 

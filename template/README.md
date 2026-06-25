@@ -44,7 +44,6 @@ command -v dotfiles >/dev/null && dotfiles status
 
 | ファイル         | 用途                   |
 | ---------------- | ---------------------- |
-| `sync.conf`      | 同期モード定義         |
-| `.infra-version` | 互換本体バージョン |
+| `sync.toml`      | 同期モード定義         |
 
 詳細は [dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) を参照。

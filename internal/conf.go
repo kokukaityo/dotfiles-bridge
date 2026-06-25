@@ -41,7 +41,6 @@ type PathSetting struct {
 	TemplateDir        string `toml:"template_dir"`
 	HookDir            string `toml:"hook_dir"`
 	BackupDir          string `toml:"backup_dir"`
-	InfraVersionFile   string `toml:"infra_version_file"`
 	SyncConfigFile     string `toml:"sync_config_file"`
 	LinkConfigFile     string `toml:"link_config_file"`
 	ConflictMarkerFile string `toml:"conflict_marker_file"`
@@ -66,8 +65,7 @@ type GitignoreSetting struct {
 // --- ランタイム設定（データリポジトリ） ---
 
 var (
-	defaultDir       = Setting.Path.DefaultDir
-	infraVersionFile = Setting.Path.InfraVersionFile
+	defaultDir = Setting.Path.DefaultDir
 
 	DefaultDir = "~/" + defaultDir
 
@@ -79,6 +77,7 @@ var (
 // SyncConfig は sync.toml をそのまま構造体にしたもの。
 // カテゴリの同期モード（auto/ignore、どちらにも属さないカテゴリは manual 扱い）とブランチ設定を保持する。
 type SyncConfig struct {
+	Version       string   `toml:"version"`
 	Mode          string   `toml:"mode"`
 	DefaultBranch string   `toml:"default_branch"`
 	Auto          []string `toml:"auto"`
@@ -86,13 +85,11 @@ type SyncConfig struct {
 }
 
 // Config はランタイムで組み立てる実行時設定。
-// SyncConfig（ファイル由来）に加えて、本体バージョンやリポジトリの絶対パスなど
+// SyncConfig（ファイル由来）に加えて、リポジトリの絶対パスなど
 // 実行環境から決まる情報を束ねる。ほぼ全ての internal 関数がこれを受け取る。
 type Config struct {
-	EngineVersion string
-	DotfilesDir   string
-	DataVersion   string
-	Sync          SyncConfig
+	DotfilesDir string
+	Sync        SyncConfig
 }
 
 // Resolve は cmd 層から呼ばれる公開エントリポイント。
@@ -110,7 +107,7 @@ func Resolve() (*Config, error) {
 //  2. カレントディレクトリの Git ルート（データリポジトリ内で作業中のケース）
 //  3. ~/dotfiles（規約ベースのデフォルト）
 //
-// 各候補は isDataRepository で .infra-version の存在を確認してから採用する。
+// 各候補は isDataRepository で sync.toml の存在を確認してから採用する。
 func resolveDotfilesDir() (string, error) {
 	if envDir := os.Getenv("DOTFILES_DIR"); envDir != "" {
 		dir, err := filepath.Abs(envDir)
@@ -137,15 +134,14 @@ func resolveDotfilesDir() (string, error) {
 	return "", fmt.Errorf("データリポジトリが見つかりません。DOTFILES_DIRを設定するか、データリポジトリ内で実行してください")
 }
 
-// isDataRepository は .infra-version ファイルの存在でデータリポジトリかどうかを判定する。
+// isDataRepository は sync.toml の存在でデータリポジトリかどうかを判定する。
 // ただの Git リポジトリと区別するためのマーカー。ディレクトリの場合は false。
 func isDataRepository(dir string) bool {
-	info, err := os.Stat(filepath.Join(dir, infraVersionFile))
+	info, err := os.Stat(filepath.Join(dir, syncConfigFile))
 	return err == nil && !info.IsDir()
 }
 
-// loadConfig は確定済みのディレクトリから sync.toml と .infra-version を読み、
-// 本体バージョンと合わせて Config を組み立てる。
+// loadConfig は確定済みのディレクトリから sync.toml を読み、Config を組み立てる。
 func loadConfig(dir string) (*Config, error) {
 	syncConfig, err := loadSyncConfig(filepath.Join(dir, syncConfigFile))
 	if err != nil {
@@ -155,16 +151,9 @@ func loadConfig(dir string) (*Config, error) {
 		return nil, err
 	}
 
-	versionBytes, err := os.ReadFile(filepath.Join(dir, infraVersionFile))
-	if err != nil {
-		return nil, fmt.Errorf("%sを読み込めません: %w", infraVersionFile, err)
-	}
-
 	config := &Config{
-		EngineVersion: strings.TrimSpace(EngineVersion),
-		DotfilesDir:   filepath.Clean(dir),
-		DataVersion:   strings.TrimSpace(string(versionBytes)),
-		Sync:          syncConfig,
+		DotfilesDir: filepath.Clean(dir),
+		Sync:        syncConfig,
 	}
 	return config, nil
 }
@@ -196,21 +185,6 @@ func validateDefaultBranch(workDir, branch string) error {
 		return fmt.Errorf("不正なdefault_branchです: %s", branch)
 	}
 	return nil
-}
-
-// majorVersion はバージョン文字列からメジャー番号だけを取り出す。
-// VersionMismatch でメジャー単位の互換性チェックに使う。
-// マイナー・パッチの差異は許容する設計。
-func majorVersion(version string) string {
-	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
-	major, _, _ := strings.Cut(version, ".")
-	return major
-}
-
-// VersionMismatch は本体とデータリポジトリのメジャーバージョンが異なるかを判定する。
-// 不一致時は cmd/root.go の config() が stderr に警告を出す。
-func (c *Config) VersionMismatch() bool {
-	return majorVersion(c.EngineVersion) != majorVersion(c.DataVersion)
 }
 
 // RepositoryPath はデータリポジトリ内のパスを組み立てるヘルパー。

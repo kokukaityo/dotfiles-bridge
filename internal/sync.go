@@ -88,7 +88,6 @@ func isReservedCategoryName(category string) bool {
 		Setting.Path.BackupDir,
 		Setting.Path.ConflictMarkerFile,
 		Setting.Path.HookDir,
-		Setting.Path.InfraVersionFile,
 		Setting.Path.SyncConfigFile,
 		watchPIDFile,
 	}
