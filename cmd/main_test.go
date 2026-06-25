@@ -21,7 +21,7 @@ func TestVersionCommandWithoutDataRepository(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stdout.String(), "dotfiles engine v1.2.3") {
+	if !strings.Contains(stdout.String(), "dotfiles v1.2.3") {
 		t.Fatalf("unexpected output: %s", stdout.String())
 	}
 }

@@ -28,7 +28,7 @@ func execute(templateFS fs.FS, hookFS fs.FS) error {
 func (a *application) rootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "dotfiles",
-		Short:         "dotfiles同期エンジン",
+		Short:         "dotfiles管理ツール",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -56,7 +56,7 @@ func (a *application) config() (*engine.Config, error) {
 		return nil, err
 	}
 	if config.VersionMismatch() {
-		_, _ = fmt.Fprintf(os.Stderr, "[dotfiles] WARNING: バージョン不整合 (engine=%s, data=%s)\n", config.EngineVersion, config.DataVersion)
+		_, _ = fmt.Fprintf(os.Stderr, "[dotfiles] WARNING: バージョン不整合 (app=%s, data=%s)\n", config.EngineVersion, config.DataVersion)
 	}
 	return config, nil
 }

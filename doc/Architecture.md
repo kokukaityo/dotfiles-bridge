@@ -5,7 +5,7 @@
 `dotfiles-bridge` は `dotfiles` コマンドとして動作するGoのシングルバイナリで、ユーザー固有データは別のGitリポジトリで管理する。
 
 ```text
-dotfiles-bridge engine
+dotfiles-bridge
 ├── cmd/
 │   ├── main.go          エントリポイントと終了コード
 │   ├── root.go          Cobraルートコマンド、application struct
@@ -18,7 +18,7 @@ dotfiles-bridge engine
 │   └── version.go       versionサブコマンド
 ├── internal/
 │   ├── conf.go          リポジトリ解決とTOML設定
-│   ├── conf.toml        エンジン内部定数（パス名、Gitキー、hookソース等）
+│   ├── conf.toml        本体内部定数（パス名、Gitキー、hookソース等）
 │   ├── git.go           gitコマンド実行
 │   ├── link.go          symlink配置
 │   ├── setup.go         initとinstall
@@ -41,7 +41,7 @@ user data repository
     └── link.toml
 ```
 
-エンジンには個人データを含めない。`template/` は `dotfiles init` で展開する初期雛形だけを持つ。
+本体には個人データを含めない。`template/` は `dotfiles init` で展開する初期雛形だけを持つ。
 
 ## 境界と責務
 
@@ -62,7 +62,7 @@ import path: `github.com/kokukaityo/dotfiles-bridge/internal`（package名 `engi
 `sync.toml` の `mode` はデフォルト `"local"`。`"remote"` を明示した場合のみ origin との同期を行う。
 `sync.toml` の `default_branch` は空値を禁止し、`git check-ref-format --branch` で検証する。
 `auto` / `ignore` のカテゴリ名は読み込み時に検証し、重複、相互衝突、パス区切り、絶対パス、内部予約名を拒否する。
-エンジンとデータの `.infra-version` はメジャーバージョンを比較し、不一致時は警告する。
+本体とデータの `.infra-version` はメジャーバージョンを比較し、不一致時は警告する。
 
 ### Git
 

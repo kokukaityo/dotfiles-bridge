@@ -7,10 +7,10 @@ teardown() {
   _common_teardown
 }
 
-@test "version: exit 0 で engine version を出力" {
+@test "version: exit 0 で本体 version を出力" {
   run dotfiles version
   assert_success
-  assert_output --partial "dotfiles engine v"
+  assert_output --partial "dotfiles v"
 }
 
 @test "version: データリポジトリがあれば data 情報も表示" {
@@ -21,7 +21,7 @@ teardown() {
   assert_output --partial "data version:"
 }
 
-@test "version: データリポジトリがなければ engine 情報のみ" {
+@test "version: データリポジトリがなければ本体情報のみ" {
   export DOTFILES_DIR="$TEST_TEMP_DIR/nonexistent"
   run dotfiles version
   assert_success

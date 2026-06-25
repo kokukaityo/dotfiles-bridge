@@ -1,4 +1,4 @@
-// conf.go はエンジンの設定を担当する。
+// conf.go は本体の設定を担当する。
 // 内部設定値を conf.toml から読み込み、データリポジトリの探索と設定の読み込みを行う。
 // cmd/ 層の各サブコマンドは Resolve() を経由してここから Config を受け取り、
 // 以降のロジック（sync, link, setup）に渡す。
@@ -14,7 +14,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// --- エンジン内部設定（conf.toml） ---
+// --- 本体内部設定（conf.toml） ---
 
 //go:embed conf.toml
 var settingData string
@@ -86,7 +86,7 @@ type SyncConfig struct {
 }
 
 // Config はランタイムで組み立てる実行時設定。
-// SyncConfig（ファイル由来）に加えて、エンジンバージョンやリポジトリの絶対パスなど
+// SyncConfig（ファイル由来）に加えて、本体バージョンやリポジトリの絶対パスなど
 // 実行環境から決まる情報を束ねる。ほぼ全ての internal 関数がこれを受け取る。
 type Config struct {
 	EngineVersion string
@@ -145,7 +145,7 @@ func isDataRepository(dir string) bool {
 }
 
 // loadConfig は確定済みのディレクトリから sync.toml と .infra-version を読み、
-// エンジンバージョンと合わせて Config を組み立てる。
+// 本体バージョンと合わせて Config を組み立てる。
 func loadConfig(dir string) (*Config, error) {
 	syncConfig, err := loadSyncConfig(filepath.Join(dir, syncConfigFile))
 	if err != nil {
@@ -207,7 +207,7 @@ func majorVersion(version string) string {
 	return major
 }
 
-// VersionMismatch はエンジンとデータリポジトリのメジャーバージョンが異なるかを判定する。
+// VersionMismatch は本体とデータリポジトリのメジャーバージョンが異なるかを判定する。
 // 不一致時は cmd/root.go の config() が stderr に警告を出す。
 func (c *Config) VersionMismatch() bool {
 	return majorVersion(c.EngineVersion) != majorVersion(c.DataVersion)

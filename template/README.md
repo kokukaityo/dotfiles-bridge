@@ -1,10 +1,10 @@
 # My Dotfiles
 
-[dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) エンジンで管理する個人設定リポジトリ。
+[dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) で管理する個人設定リポジトリ。
 
 ## セットアップ
 
-### 1. エンジンをインストール
+### 1. dotfiles-bridge をインストール
 
 ```bash
 git clone https://github.com/kokukaityo/dotfiles-bridge.git ~/.local/share/dotfiles-bridge
@@ -45,6 +45,6 @@ command -v dotfiles >/dev/null && dotfiles status
 | ファイル         | 用途                   |
 | ---------------- | ---------------------- |
 | `sync.conf`      | 同期モード定義         |
-| `.infra-version` | 互換エンジンバージョン |
+| `.infra-version` | 互換本体バージョン |
 
 詳細は [dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) を参照。

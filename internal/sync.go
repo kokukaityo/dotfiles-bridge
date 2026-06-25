@@ -75,7 +75,7 @@ func validateCategoryName(category string) error {
 	case !categoryNamePattern.MatchString(category):
 		return fmt.Errorf("使用できる文字は英数字、_、.、-のみで、先頭は英数字または_です")
 	case isReservedCategoryName(category):
-		return fmt.Errorf("エンジン内部で予約されている名前です")
+		return fmt.Errorf("本体内部で予約されている名前です")
 	default:
 		return nil
 	}
