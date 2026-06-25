@@ -1,9 +1,9 @@
 [darwin]
 "AGENTS.md" = ["~/.codex/AGENTS.md", "~/.claude/CLAUDE.md"]
 "commands/" = ["~/.claude/commands/"]
-"skills/" = ["~/.agents/skills/"]
+"skills/" = ["~/.claude/skills/", "~/.codex/skills/"]
 
 [win32]
 "AGENTS.md" = ["~/.codex/AGENTS.md", "~/.claude/CLAUDE.md"]
 "commands/" = ["~/.claude/commands/"]
-"skills/" = ["~/.agents/skills/"]
+"skills/" = ["~/.claude/skills/", "~/.codex/skills/"]
