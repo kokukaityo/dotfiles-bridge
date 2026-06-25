@@ -7,9 +7,10 @@
 ### 1. dotfiles-bridge をインストール
 
 ```bash
-git clone https://github.com/kokukaityo/dotfiles-bridge.git ~/.local/share/dotfiles-bridge
-export PATH="$HOME/.local/share/dotfiles-bridge/bin:$PATH"
+curl -fsSL https://raw.githubusercontent.com/kokukaityo/dotfiles-bridge/main/install.sh | bash
 ```
+
+Windows の場合は [GitHub Releases](https://github.com/kokukaityo/dotfiles-bridge/releases) から zip をダウンロードしてください。
 
 ### 2. 初期設定
 
@@ -19,18 +20,17 @@ dotfiles install
 
 ### 3. シェル起動時の自動同期（任意）
 
-`~/.bashrc` or `~/.zshrc` に追加:
+`~/.bashrc` や `~/.zshrc` に追加:
 
 ```bash
 export DOTFILES_DIR="$HOME/dotfiles"
-export PATH="$HOME/.local/share/dotfiles-bridge/bin:$PATH"
 command -v dotfiles >/dev/null && dotfiles pull
 command -v dotfiles >/dev/null && dotfiles status
 ```
 
 ## 使い方
 
-- 設定ファイルを追加: カテゴリディレクトリにファイルを置き、`link.yaml` に symlink 定義を追加
+- 設定ファイルを追加: カテゴリディレクトリにファイルを置き、`link.toml` に symlink 定義を追加
 - 同期: `dotfiles push` / `dotfiles pull`
 - symlink 再配置: `dotfiles link`
 
@@ -42,9 +42,9 @@ command -v dotfiles >/dev/null && dotfiles status
 | `editor/`    | エディタ設定        |
 | `shell/`     | シェル設定          |
 
-| ファイル         | 用途                   |
-| ---------------- | ---------------------- |
-| `sync.conf`      | 同期モード定義         |
-| `.infra-version` | 互換本体バージョン |
+| ファイル         | 用途                 |
+| ---------------- | -------------------- |
+| `sync.toml`      | 同期モード定義       |
+| `.infra-version` | 互換本体バージョン   |
 
 詳細は [dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) を参照。
