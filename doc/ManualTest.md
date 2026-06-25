@@ -63,8 +63,7 @@ make exe-init ~/dotfiles-test
 **確認：**
 
 - [ ] `~/dotfiles-test/` が作成される
-- [ ] `.infra-version` に本体バージョンが書かれている
-- [ ] `sync.toml` が存在し、`mode`, `default_branch`, `auto`, `ignore` が設定されている
+- [ ] `sync.toml` が存在し、`version`, `mode`, `default_branch`, `auto`, `ignore` が設定されている
 - [ ] `ai-agent/link.toml`, `editor/link.toml`, `shell/link.toml` が存在
 - [ ] `.dotfiles-hook/pre-push`, `.dotfiles-hook/post-merge` が存在
 - [ ] `.gitattributes` に `* -text` が書かれている
@@ -275,7 +274,6 @@ make exe-pull
 - [ ] `conflict/<hostname>/<timestamp>` ブランチが作成される
 - [ ] ローカルの変更がそのブランチに退避される
 - [ ] main がリモートの HEAD にリセットされる（リモート側の内容になる）
-- [ ] `.conflict-pending` ファイルが作成される
 - [ ] `dotfiles status` → `CONFLICT PENDING` 警告バナー
 
 **設計思想：** 設定ファイルの auto-merge は危険なので行わない。ローカル変更を別ブランチに保護した上で、main をリモートに合わせる。ユーザーが明示的に解消する。
@@ -296,15 +294,14 @@ git cherry-pick <conflict-branch の commit hash>
 # 解消したら conflict ブランチを削除
 git branch -D conflict/<hostname>/<timestamp>
 
-# 次の pull でマーカーが自動で消える
+# 次の status でコンフリクトなしになる
 cd /d/work/dotfile/work
-make exe-pull
+make exe-status
 ```
 
 **確認：**
 
-- [ ] conflict ブランチ削除後の pull → `.conflict-pending` が消える
-- [ ] `コンフリクト解消を確認し、マーカーを削除しました` と表示
+- [ ] conflict ブランチ削除後の status で警告が消える
 - [ ] `status` が `[status] No conflicts.` に戻る
 
 ### K. pre-push hook — コンフリクトマーカー検出

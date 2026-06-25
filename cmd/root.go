@@ -2,9 +2,7 @@
 package main
 
 import (
-	"fmt"
 	"io/fs"
-	"os"
 
 	engine "github.com/kokukaityo/dotfiles-bridge/internal"
 	"github.com/spf13/cobra"
@@ -49,14 +47,6 @@ func (a *application) rootCommand() *cobra.Command {
 }
 
 // config は init・version 以外の全サブコマンドが最初に呼ぶ共通処理。
-// データリポジトリの解決とバージョン不整合の警告を集約している。
 func (a *application) config() (*engine.Config, error) {
-	config, err := engine.Resolve()
-	if err != nil {
-		return nil, err
-	}
-	if config.VersionMismatch() {
-		_, _ = fmt.Fprintf(os.Stderr, "[dotfiles] WARNING: バージョン不整合 (app=%s, data=%s)\n", config.EngineVersion, config.DataVersion)
-	}
-	return config, nil
+	return engine.Resolve()
 }

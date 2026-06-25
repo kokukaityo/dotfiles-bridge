@@ -22,7 +22,6 @@ var (
 	gitignoreMarkerStart = Setting.Gitignore.MarkerStart
 	gitignoreMarkerEnd   = Setting.Gitignore.MarkerEnd
 	securityPatterns     = Setting.Gitignore.SecurityPatterns
-	conflictMarkerFile   = Setting.Path.ConflictMarkerFile
 	syncConfigFile       = Setting.Path.SyncConfigFile
 )
 
@@ -86,9 +85,7 @@ func isReservedCategoryName(category string) bool {
 		".git",
 		".gitignore",
 		Setting.Path.BackupDir,
-		Setting.Path.ConflictMarkerFile,
 		Setting.Path.HookDir,
-		Setting.Path.InfraVersionFile,
 		Setting.Path.SyncConfigFile,
 		watchPIDFile,
 	}
@@ -120,7 +117,7 @@ func GenerateGitignore(config *Config) error {
 	for _, category := range config.Sync.Ignore {
 		output.WriteString(category + "/\n")
 	}
-	output.WriteString("\n" + conflictMarkerFile + "\n" + watchPIDFile + "\n" + hookDir + "/\n")
+	output.WriteString("\n" + watchPIDFile + "\n" + hookDir + "/\n")
 	output.WriteString(gitignoreMarkerEnd + "\n")
 
 	if err := os.WriteFile(path, []byte(output.String()), 0o644); err != nil {
@@ -155,20 +152,23 @@ func readManualGitignore(path string) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-// Status は .conflict-pending マーカーの有無を確認し、未解決コンフリクトがあれば警告する。
+// Status は conflict/* ブランチの有無を確認し、未解決コンフリクトがあれば警告する。
 // シェル起動時に dotfiles status を呼ぶ運用を想定した軽量チェック。
 func Status(config *Config, stdout io.Writer) error {
-	if _, err := os.Stat(RepositoryPath(config, conflictMarkerFile)); err == nil {
+	git := GitRunner{WorkDir: config.DotfilesDir}
+	branches, err := git.Output("branch", "--list", "conflict/*")
+	if err != nil {
+		return fmt.Errorf("コンフリクト状態を確認できません: %w", err)
+	}
+	if branches != "" {
 		_, _ = fmt.Fprintln(stdout, "")
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "  [dotfiles] CONFLICT PENDING")
 		_, _ = fmt.Fprintf(stdout, "  Run: cd %s && git log --oneline --graph --all\n", config.DotfilesDir)
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "")
-	} else if os.IsNotExist(err) {
-		_, _ = fmt.Fprintln(stdout, "[status] No conflicts.")
 	} else {
-		return fmt.Errorf("コンフリクト状態を確認できません: %w", err)
+		_, _ = fmt.Fprintln(stdout, "[status] No conflicts.")
 	}
 	return nil
 }
@@ -185,9 +185,6 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 		return nil
 	}
 	git := GitRunner{WorkDir: config.DotfilesDir, Stdout: stdout, Stderr: stderr}
-	if err := clearResolvedConflictMarker(config, git, stdout); err != nil {
-		return err
-	}
 	if err := git.Run("fetch", "--quiet", "origin"); err != nil {
 		return err
 	}
@@ -250,33 +247,7 @@ func Pull(config *Config, stdout, stderr io.Writer) error {
 	if err := git.Run("reset", "--hard", remoteRef); err != nil {
 		return err
 	}
-	if err := os.WriteFile(RepositoryPath(config, conflictMarkerFile), nil, 0o644); err != nil {
-		return fmt.Errorf("%sを作成できません: %w", conflictMarkerFile, err)
-	}
 	_, _ = fmt.Fprintf(stdout, "[sync] ローカル変更は%sへ退避し、%sを%sへ戻しました。\n", conflictBranch, config.Sync.DefaultBranch, remoteRef)
-	return nil
-}
-
-// clearResolvedConflictMarker は Pull の冒頭で呼ばれる自動クリーンアップ。
-// ユーザーが conflict ブランチを全て削除していれば、.conflict-pending マーカーも消す。
-// ブランチがまだ残っていれば何もしない。
-func clearResolvedConflictMarker(config *Config, git GitRunner, stdout io.Writer) error {
-	marker := RepositoryPath(config, conflictMarkerFile)
-	if _, err := os.Stat(marker); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	branches, err := git.Output("branch", "--list", "conflict/*")
-	if err != nil {
-		return err
-	}
-	if branches == "" {
-		if err := os.Remove(marker); err != nil {
-			return fmt.Errorf("%sを削除できません: %w", conflictMarkerFile, err)
-		}
-		_, _ = fmt.Fprintln(stdout, "[sync] コンフリクト解消を確認し、マーカーを削除しました。")
-	}
 	return nil
 }
 

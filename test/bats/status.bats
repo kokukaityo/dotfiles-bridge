@@ -14,9 +14,9 @@ teardown() {
   refute_output --partial "CONFLICT PENDING"
 }
 
-@test "status: .conflict-pending があれば警告" {
+@test "status: conflict ブランチがあれば警告" {
   create_data_repo
-  touch "$DOTFILES_DIR/.conflict-pending"
+  git -C "$DOTFILES_DIR" branch "conflict/test/20250101-000000"
   run dotfiles status
   assert_success
   assert_output --partial "CONFLICT PENDING"

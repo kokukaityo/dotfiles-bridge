@@ -10,6 +10,5 @@
 backup/
 raw/
 
-.conflict-pending
 .dotfiles-hook/
 # --- end auto-generated ---

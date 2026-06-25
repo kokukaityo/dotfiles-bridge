@@ -49,6 +49,42 @@ func TestGenerateGitignorePreservesManualSection(t *testing.T) {
 			t.Fatalf(".gitignoreに%qがない:\n%s", expected, content)
 		}
 	}
+	if strings.Contains(content, ".conflict-pending") {
+		t.Fatalf(".gitignoreに廃止済みマーカーが含まれている:\n%s", content)
+	}
+}
+
+func TestStatusReportsConflictBranch(t *testing.T) {
+	dir := newTestRepository(t, "main")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-m", "initial")
+	runGit(t, dir, "branch", "conflict/test/20250101-000000")
+
+	config := &Config{DotfilesDir: dir}
+	var stdout bytes.Buffer
+	if err := Status(config, &stdout); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "CONFLICT PENDING") {
+		t.Fatalf("expected conflict warning, got: %s", stdout.String())
+	}
+}
+
+func TestStatusReportsNoConflictWithoutConflictBranch(t *testing.T) {
+	dir := newTestRepository(t, "main")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-m", "initial")
+
+	config := &Config{DotfilesDir: dir}
+	var stdout bytes.Buffer
+	if err := Status(config, &stdout); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "[status] No conflicts.") {
+		t.Fatalf("expected no conflict message, got: %s", stdout.String())
+	}
 }
 
 func TestWriteSyncConfig(t *testing.T) {
@@ -104,14 +140,12 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	runGit(t, first, "config", "user.name", "dotfiles test")
 	runGit(t, first, "config", "user.email", "dotfiles@example.invalid")
 	runGit(t, first, "remote", "add", "origin", remote)
-	writeTestFile(t, filepath.Join(first, Setting.Path.InfraVersionFile), "1.0.0")
 	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "mode = \"remote\"\ndefault_branch = \"develop\"\nauto = [\"editor\"]\nignore = []\n")
 	writeTestFile(t, filepath.Join(first, "editor", "settings.json"), "one")
 	runGit(t, first, "add", "-A")
 	runGit(t, first, "commit", "-m", "initial")
 	runGit(t, first, "push", "-u", "origin", "develop")
 
-	EngineVersion = "1.0.0"
 	config, err := loadConfig(first)
 	if err != nil {
 		t.Fatal(err)
@@ -159,13 +193,11 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 
 func TestPushLocalModeSkipsPush(t *testing.T) {
 	dir := newTestRepository(t, "main")
-	writeTestFile(t, filepath.Join(dir, Setting.Path.InfraVersionFile), "1.0.0")
 	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\nauto = [\"editor\"]\n")
 	writeTestFile(t, filepath.Join(dir, "editor", "file.txt"), "hello")
 	runGit(t, dir, "add", "-A")
 	runGit(t, dir, "commit", "-m", "initial")
 
-	EngineVersion = "1.0.0"
 	config, err := loadConfig(dir)
 	if err != nil {
 		t.Fatal(err)
