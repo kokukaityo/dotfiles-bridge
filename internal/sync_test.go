@@ -49,6 +49,42 @@ func TestGenerateGitignorePreservesManualSection(t *testing.T) {
 			t.Fatalf(".gitignoreに%qがない:\n%s", expected, content)
 		}
 	}
+	if strings.Contains(content, ".conflict-pending") {
+		t.Fatalf(".gitignoreに廃止済みマーカーが含まれている:\n%s", content)
+	}
+}
+
+func TestStatusReportsConflictBranch(t *testing.T) {
+	dir := newTestRepository(t, "main")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-m", "initial")
+	runGit(t, dir, "branch", "conflict/test/20250101-000000")
+
+	config := &Config{DotfilesDir: dir}
+	var stdout bytes.Buffer
+	if err := Status(config, &stdout); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "CONFLICT PENDING") {
+		t.Fatalf("expected conflict warning, got: %s", stdout.String())
+	}
+}
+
+func TestStatusReportsNoConflictWithoutConflictBranch(t *testing.T) {
+	dir := newTestRepository(t, "main")
+	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-m", "initial")
+
+	config := &Config{DotfilesDir: dir}
+	var stdout bytes.Buffer
+	if err := Status(config, &stdout); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "[status] No conflicts.") {
+		t.Fatalf("expected no conflict message, got: %s", stdout.String())
+	}
 }
 
 func TestWriteSyncConfig(t *testing.T) {

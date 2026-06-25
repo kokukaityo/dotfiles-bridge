@@ -37,13 +37,12 @@ type EngineSetting struct {
 }
 
 type PathSetting struct {
-	DefaultDir         string `toml:"default_dir"`
-	TemplateDir        string `toml:"template_dir"`
-	HookDir            string `toml:"hook_dir"`
-	BackupDir          string `toml:"backup_dir"`
-	SyncConfigFile     string `toml:"sync_config_file"`
-	LinkConfigFile     string `toml:"link_config_file"`
-	ConflictMarkerFile string `toml:"conflict_marker_file"`
+	DefaultDir     string `toml:"default_dir"`
+	TemplateDir    string `toml:"template_dir"`
+	HookDir        string `toml:"hook_dir"`
+	BackupDir      string `toml:"backup_dir"`
+	SyncConfigFile string `toml:"sync_config_file"`
+	LinkConfigFile string `toml:"link_config_file"`
 }
 
 type GitSetting struct {

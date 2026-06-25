@@ -127,7 +127,7 @@ WindowsのOSキーは `win32`。
 
 pull時にローカルとリモートが分岐していた場合、ローカル側を
 `conflict/<hostname>/<timestamp>` ブランチへ退避し、既定ブランチをリモートへ戻す。
-未解決状態では `.conflict-pending` が作成され、`dotfiles status` が警告を表示する。
+`conflict/*` ブランチが残っている間、`dotfiles status` が警告を表示する。
 
 ## ライセンス
 

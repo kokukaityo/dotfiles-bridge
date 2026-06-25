@@ -5,7 +5,6 @@ hook_dir = ".dotfiles-hook"
 backup_dir = ".backup"
 sync_config_file = "sync.toml"
 link_config_file = "link.toml"
-conflict_marker_file = ".conflict-pending"
 
 [git]
 hooks_path = "core.hooksPath"
