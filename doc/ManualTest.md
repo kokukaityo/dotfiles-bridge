@@ -395,15 +395,15 @@ gh repo delete kokukaityo/dotfiles-test --yes
 
 # バックアップを復元
 rm -rf ~/.claude
-cp ~/.claude.bak ~/.claude
+cp -r ~/.claude.bak ~/.claude
 rm -rf ~/.claude.bak
 
 rm -rf ~/.codex
-cp ~/.codex.bak ~/.codex
+cp -r ~/.codex.bak ~/.codex
 rm -rf ~/.codex.bak
 
 rm -rf ~/.agents
-cp ~/.agents.bak ~/.agents
+cp -r ~/.agents.bak ~/.agents
 rm -rf ~/.agents.bak
 
 # watch サービス（スタートアップ VBScript）を削除
