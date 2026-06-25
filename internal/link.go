@@ -151,7 +151,7 @@ func LinkAll(config *Config, stdout io.Writer) error {
 	}
 	sort.Strings(matches)
 
-	_, _ = fmt.Fprintf(stdout, "=== dotfile link (%s) ===\n", osKey)
+	_, _ = fmt.Fprintf(stdout, "=== dotfiles link (%s) ===\n", osKey)
 	for _, configPath := range matches {
 		categoryDir := filepath.Dir(configPath)
 		categoryName := filepath.Base(categoryDir)

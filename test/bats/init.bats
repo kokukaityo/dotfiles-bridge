@@ -11,7 +11,7 @@ teardown() {
 @test "init: 指定パスにデータリポジトリを新規作成" {
   can_symlink || skip "init runs link internally; symlink not available"
 
-  run dotfile init "$TARGET"
+  run dotfiles init "$TARGET"
   assert_success
   assert_output --partial "データリポジトリを作成"
   assert_output --partial "作成が完了"
@@ -39,20 +39,20 @@ teardown() {
 @test "init: hooks と git 設定が適用される" {
   can_symlink || skip "init runs link internally; symlink not available"
 
-  dotfile init "$TARGET"
+  dotfiles init "$TARGET"
 
-  assert_file_exists "$TARGET/.dotfile-hook/pre-push"
-  assert_file_exists "$TARGET/.dotfile-hook/post-merge"
+  assert_file_exists "$TARGET/.dotfiles-hook/pre-push"
+  assert_file_exists "$TARGET/.dotfiles-hook/post-merge"
 
   run git -C "$TARGET" config core.hooksPath
-  assert_output ".dotfile-hook"
+  assert_output ".dotfiles-hook"
 
   assert_file_contains "$TARGET/.gitattributes" '* -text'
 }
 
 @test "init: 既存パスへの init はエラー" {
   mkdir -p "$TARGET"
-  run dotfile init "$TARGET"
+  run dotfiles init "$TARGET"
   assert_failure
   assert_output --partial "既にパスが存在します"
 }

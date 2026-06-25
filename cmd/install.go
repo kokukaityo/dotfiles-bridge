@@ -1,7 +1,7 @@
 package main
 
 import (
-	engine "github.com/kokukaityo/dotfile/internal"
+	engine "github.com/kokukaityo/dotfiles-bridge/internal"
 	"github.com/spf13/cobra"
 )
 

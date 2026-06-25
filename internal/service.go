@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	systemdUnitName = "dotfile-watch.service"
-	launchdLabel    = "com.dotfile.watch"
-	startupVBSName  = "dotfile-watch.vbs"
+	systemdUnitName = "dotfiles-watch.service"
+	launchdLabel    = "com.dotfiles.watch"
+	startupVBSName  = "dotfiles-watch.vbs"
 )
 
 var (
@@ -41,7 +41,7 @@ func RegisterService(config *Config, stdout io.Writer) error {
 	if err := enableService(serviceGOOS, path); err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(stdout, "[dotfile] watchサービスを登録しました: %s\n", path)
+	_, _ = fmt.Fprintf(stdout, "[dotfiles] watchサービスを登録しました: %s\n", path)
 	_ = config
 	return nil
 }
@@ -57,7 +57,7 @@ func UnregisterService(config *Config, stdout io.Writer) error {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("サービス設定を削除できません: %w", err)
 	}
-	_, _ = fmt.Fprintf(stdout, "[dotfile] watchサービスを解除しました: %s\n", path)
+	_, _ = fmt.Fprintf(stdout, "[dotfiles] watchサービスを解除しました: %s\n", path)
 	_ = config
 	return nil
 }
@@ -70,7 +70,7 @@ func serviceFile(goos, executable string) (string, string, error) {
 	switch goos {
 	case "linux":
 		return path, fmt.Sprintf(`[Unit]
-Description=dotfile watch - auto push on file change
+Description=dotfiles watch - auto push on file change
 
 [Service]
 ExecStart=%s watch
@@ -136,7 +136,7 @@ func launchdLogPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ホームディレクトリを取得できません: %w", err)
 	}
-	return filepath.Join(home, ".local", "state", "dotfile", "watch.log"), nil
+	return filepath.Join(home, ".local", "state", "dotfiles", "watch.log"), nil
 }
 
 func enableService(goos, path string) error {

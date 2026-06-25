@@ -16,7 +16,7 @@ teardown() {
 
   echo "new content" > "$DOTFILES_DIR/editor/settings.json"
 
-  run dotfile push
+  run dotfiles push
   assert_success
   assert_output --partial "Pushed to origin"
 }
@@ -28,7 +28,7 @@ teardown() {
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
   enable_remote_mode
 
-  run dotfile push
+  run dotfiles push
   assert_success
   assert_output --partial "自動同期カテゴリに変更はありません"
 }
@@ -42,7 +42,7 @@ teardown() {
 
   git -C "$DOTFILES_DIR" checkout -b feature/test --quiet
 
-  run dotfile push
+  run dotfiles push
   assert_success
   assert_output --partial "自動pushをスキップ"
 }

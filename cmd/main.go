@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"os"
 
-	dotfile "github.com/kokukaityo/dotfile"
-	engine "github.com/kokukaityo/dotfile/internal"
+	dotfiles "github.com/kokukaityo/dotfiles-bridge"
+	engine "github.com/kokukaityo/dotfiles-bridge/internal"
 )
 
 func main() {
-	engine.EngineVersion = dotfile.Version
-	if err := execute(dotfile.TemplateFS, dotfile.HookFS); err != nil {
-		fmt.Fprintf(os.Stderr, "[dotfile] Error: %v\n", err)
+	engine.EngineVersion = dotfiles.Version
+	if err := execute(dotfiles.TemplateFS, dotfiles.HookFS); err != nil {
+		fmt.Fprintf(os.Stderr, "[dotfiles] Error: %v\n", err)
 		os.Exit(1)
 	}
 }

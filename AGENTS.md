@@ -50,10 +50,15 @@
 make fmt    # gofumpt
 make lint   # golangci-lint
 make test   # go test（GOTMPDIR=dist/ を設定済み）
-make build  # go build → dist/dotfile
+make build  # go build → dist/dotfiles
 ```
 
 Makefile は `GOTMPDIR` を `dist/` に設定しており、ビルド・テストの一時ファイルがワークスペースを汚さないようになっている。`go test ./...` を直接叩くと一時ファイルがワークスペース内に散らばる。
+
+## 命名
+
+- コマンド名は `dotfiles`（複数形）。`dotfile`（単数形）は使わない。
+- GitHub URL / Go module path は `dotfiles-bridge`。`dotfiles` 単体のリポジトリ名は使わない。
 
 ## ドキュメント更新
 

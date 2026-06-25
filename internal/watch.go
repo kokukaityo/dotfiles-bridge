@@ -19,7 +19,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-const watchPIDFile = ".dotfile-watch.pid"
+const watchPIDFile = ".dotfiles-watch.pid"
 
 var (
 	watchDebounce = 3 * time.Second
@@ -135,7 +135,7 @@ func acquireWatchPID(config *Config) (func(), error) {
 	if data, err := os.ReadFile(path); err == nil {
 		pid, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
 		if parseErr == nil && isProcessRunning(pid) {
-			return nil, fmt.Errorf("dotfile watchは既に稼働中です (pid=%d)", pid)
+			return nil, fmt.Errorf("dotfiles watchは既に稼働中です (pid=%d)", pid)
 		}
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("PIDファイルを読めません: %w", err)

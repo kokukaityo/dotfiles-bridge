@@ -20,7 +20,7 @@ EOF
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "gitignore with manual section" --quiet
 
-  run dotfile gitignore
+  run dotfiles gitignore
   assert_success
 
   assert_file_contains "$DOTFILES_DIR/.gitignore" "my-manual-entry/"
@@ -30,5 +30,5 @@ EOF
   assert_file_contains "$DOTFILES_DIR/.gitignore" "*auth*"
   assert_file_contains "$DOTFILES_DIR/.gitignore" ".env*"
   assert_file_contains "$DOTFILES_DIR/.gitignore" ".conflict-pending"
-  assert_file_contains "$DOTFILES_DIR/.gitignore" ".dotfile-hook/"
+  assert_file_contains "$DOTFILES_DIR/.gitignore" ".dotfiles-hook/"
 }

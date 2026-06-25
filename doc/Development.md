@@ -20,7 +20,7 @@ npm install
 
 | コマンド     | 内容                    |
 | ------------ | ----------------------- |
-| `make build` | `dist/dotfile` を生成   |
+| `make build` | `dist/dotfiles` を生成   |
 | `make lint`  | golangci-lintを実行     |
 | `make fmt`   | Goコードをgofumptで整形 |
 | `make test`  | 全Goテストを実行        |

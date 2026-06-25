@@ -9,9 +9,9 @@ teardown() {
 
 @test "link: OS ヘッダーと Done を出力" {
   create_data_repo
-  run dotfile link
+  run dotfiles link
   assert_success
-  assert_output --partial "=== dotfile link"
+  assert_output --partial "=== dotfiles link"
   assert_output --partial "Done."
 }
 
@@ -33,7 +33,7 @@ TOML
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "add link config" --quiet
 
-  run dotfile link
+  run dotfiles link
   assert_success
   assert_output --partial "linked:"
 
@@ -61,7 +61,7 @@ TOML
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "add link config" --quiet
 
-  run dotfile link
+  run dotfiles link
   assert_success
   assert_output --partial "backed up:"
 
@@ -92,9 +92,9 @@ TOML
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "add link config" --quiet
 
-  dotfile link
+  dotfiles link
 
-  run dotfile link
+  run dotfiles link
   assert_success
   assert_output --partial "already linked"
 }
@@ -113,7 +113,7 @@ TOML
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "add link config" --quiet
 
-  run dotfile link
+  run dotfiles link
   assert_success
   assert_output --partial "skip (source not found)"
 }

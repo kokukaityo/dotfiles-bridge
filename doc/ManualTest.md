@@ -1,4 +1,4 @@
-# dotfile エンジン 手動動作確認手順書
+# dotfiles エンジン 手動動作確認手順書
 
 ## Context
 
@@ -66,11 +66,11 @@ make exe-init ~/dotfiles-test
 - [ ] `.infra-version` にエンジンバージョンが書かれている
 - [ ] `sync.toml` が存在し、`mode`, `default_branch`, `auto`, `ignore` が設定されている
 - [ ] `ai-agent/link.toml`, `editor/link.toml`, `shell/link.toml` が存在
-- [ ] `.dotfile-hook/pre-push`, `.dotfile-hook/post-merge` が存在
+- [ ] `.dotfiles-hook/pre-push`, `.dotfiles-hook/post-merge` が存在
 - [ ] `.gitattributes` に `* -text` が書かれている
 - [ ] `.gitignore` にマーカー行と自動生成セクションがある
 - [ ] `git log` → `feat: initial dotfiles setup` の初回コミット
-- [ ] `[dotfile] watchサービスを登録しました` と表示される（`go run` 経由のため VBScript のパスは無効だが、登録自体は成功する）
+- [ ] `[dotfiles] watchサービスを登録しました` と表示される（`go run` 経由のため VBScript のパスは無効だが、登録自体は成功する）
 
 ### B. link
 
@@ -85,7 +85,7 @@ make exe-link
 - [ ] `~/.claude/commands/` → `~/dotfiles-test/ai-agent/commands/` の symlink
 - [ ] `~/.agents/skills/` → `~/dotfiles-test/ai-agent/skills/` の symlink
 - [ ] 元のファイルが `.backup/ai-agent_<timestamp>/` に退避されている
-- [ ] 2回目の `dotfile link` → `ok (already linked)` と表示（冪等）
+- [ ] 2回目の `dotfiles link` → `ok (already linked)` と表示（冪等）
 
 ### C. status
 
@@ -105,7 +105,7 @@ make exe-version
 
 **確認：**
 
-- [ ] `dotfile engine v<version>` と表示される
+- [ ] `dotfiles engine v<version>` と表示される
 
 ### E. gitignore
 
@@ -150,7 +150,7 @@ make exe-watch
 
 **確認：**
 
-- [ ] `dotfile watchは既に稼働中です (pid=...)` とエラー表示
+- [ ] `dotfiles watchは既に稼働中です (pid=...)` とエラー表示
 
 ```bash
 # ターミナル1: Ctrl+C で停止
@@ -158,7 +158,7 @@ make exe-watch
 
 **確認：**
 
-- [ ] 正常終了し、`~/dotfiles-test/.dotfile-watch.pid` が削除されている
+- [ ] 正常終了し、`~/dotfiles-test/.dotfiles-watch.pid` が削除されている
 
 ---
 
@@ -240,10 +240,10 @@ make exe-install DOTFILES_DIR=~/dotfiles-test-clone
 
 **確認：**
 
-- [ ] `.dotfile-hook/` に hook が展開される
-- [ ] `git config core.hooksPath` → `.dotfile-hook`
+- [ ] `.dotfiles-hook/` に hook が展開される
+- [ ] `git config core.hooksPath` → `.dotfiles-hook`
 - [ ] symlink が配置される（1台目の link 結果を上書き）
-- [ ] `[dotfile] watchサービスを登録しました` と表示される
+- [ ] `[dotfiles] watchサービスを登録しました` と表示される
 
 ---
 
@@ -276,7 +276,7 @@ make exe-pull
 - [ ] ローカルの変更がそのブランチに退避される
 - [ ] main がリモートの HEAD にリセットされる（リモート側の内容になる）
 - [ ] `.conflict-pending` ファイルが作成される
-- [ ] `dotfile status` → `CONFLICT PENDING` 警告バナー
+- [ ] `dotfiles status` → `CONFLICT PENDING` 警告バナー
 
 **設計思想：** 設定ファイルの auto-merge は危険なので行わない。ローカル変更を別ブランチに保護した上で、main をリモートに合わせる。ユーザーが明示的に解消する。
 
@@ -407,5 +407,5 @@ cp -r ~/.agents.bak ~/.agents
 rm -rf ~/.agents.bak
 
 # watch サービス（スタートアップ VBScript）を削除
-rm -f "$APPDATA/Microsoft/Windows/Start Menu/Programs/Startup/dotfile-watch.vbs"
+rm -f "$APPDATA/Microsoft/Windows/Start Menu/Programs/Startup/dotfiles-watch.vbs"
 ```

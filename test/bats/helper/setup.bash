@@ -39,12 +39,12 @@ _common_setup() {
   git config --global user.email "bats@test.invalid"
 
   if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then
-    if [[ ! -f "$PROJECT_ROOT/dist/dotfile.exe" ]]; then
-      fail "dist/dotfile.exe not found. Run 'make build' first."
+    if [[ ! -f "$PROJECT_ROOT/dist/dotfiles.exe" ]]; then
+      fail "dist/dotfiles.exe not found. Run 'make build' first."
     fi
   else
-    if [[ ! -f "$PROJECT_ROOT/dist/dotfile" ]]; then
-      fail "dist/dotfile not found. Run 'make build' first."
+    if [[ ! -f "$PROJECT_ROOT/dist/dotfiles" ]]; then
+      fail "dist/dotfiles not found. Run 'make build' first."
     fi
   fi
 }

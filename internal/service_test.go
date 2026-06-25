@@ -12,9 +12,9 @@ func TestRegisterAndUnregisterServiceFiles(t *testing.T) {
 	for _, goos := range []string{"linux", "darwin", "windows"} {
 		t.Run(goos, func(t *testing.T) {
 			home := t.TempDir()
-			executable := "/opt/dotfile/bin/dotfile"
+			executable := "/opt/dotfiles/bin/dotfiles"
 			if goos == "windows" {
-				executable = `C:\Program Files\dotfile\dotfile.exe`
+				executable = `C:\Program Files\dotfiles\dotfiles.exe`
 			}
 			var commands []string
 			withServiceTestHooks(t, goos, home, executable, func(name string, args ...string) error {

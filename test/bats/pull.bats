@@ -24,7 +24,7 @@ teardown() {
   git -C "$second" commit -m "remote update" --quiet
   git -C "$second" push origin main --quiet 2>/dev/null
 
-  run dotfile pull
+  run dotfiles pull
   assert_success
   assert_output --partial "Fast-forwarded"
   [[ -f "$DOTFILES_DIR/editor/remote-file.txt" ]] || fail "expected remote file to exist locally"
@@ -37,7 +37,7 @@ teardown() {
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
   enable_remote_mode
 
-  run dotfile pull
+  run dotfiles pull
   assert_success
   assert_output --partial "Already up to date."
 }
@@ -63,7 +63,7 @@ teardown() {
   git -C "$second" commit -m "remote diverge" --quiet
   git -C "$second" push origin main --quiet 2>/dev/null
 
-  run dotfile pull
+  run dotfiles pull
   assert_success
   assert_output --partial "分岐を検出"
 

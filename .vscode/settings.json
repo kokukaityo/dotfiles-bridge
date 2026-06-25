@@ -48,5 +48,5 @@
     },
 
     // Spell checker
-    "cSpell.words": ["dotfile", "gofmt", "gofumpt", "golangci", "symlink"]
+    "cSpell.words": ["dotfiles", "gofmt", "gofumpt", "golangci", "symlink"]
 }

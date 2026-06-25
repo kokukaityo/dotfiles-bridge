@@ -22,7 +22,7 @@ teardown() {
   local before_count
   before_count=$(git -C "$DOTFILES_DIR" rev-list --count HEAD)
 
-  run dotfile delete-category editor
+  run dotfiles delete-category editor
   assert_success
   assert_output --partial "カテゴリを削除しました"
 
@@ -60,7 +60,7 @@ TOML
   local before_count
   before_count=$(git -C "$DOTFILES_DIR" rev-list --count HEAD)
 
-  run dotfile delete-category docs
+  run dotfiles delete-category docs
   assert_success
   assert_output --partial "カテゴリを削除しました"
 
@@ -82,7 +82,7 @@ TOML
   enable_remote_mode
 
   # .gitignore を生成して commit
-  run dotfile gitignore
+  run dotfiles gitignore
   assert_success
   git -C "$DOTFILES_DIR" add -A
   git -C "$DOTFILES_DIR" commit -m "add gitignore" --quiet
@@ -95,7 +95,7 @@ TOML
   local before_count
   before_count=$(git -C "$DOTFILES_DIR" rev-list --count HEAD)
 
-  run dotfile delete-category backup
+  run dotfiles delete-category backup
   assert_success
   assert_output --partial "カテゴリを削除しました"
 
@@ -131,7 +131,7 @@ TOML
   local before_count
   before_count=$(git -C "$DOTFILES_DIR" rev-list --count HEAD)
 
-  run dotfile delete-category orphan
+  run dotfiles delete-category orphan
   assert_success
   assert_output --partial "カテゴリを削除しました"
 
@@ -152,7 +152,7 @@ TOML
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
   enable_remote_mode
 
-  run dotfile delete-category nonexistent
+  run dotfiles delete-category nonexistent
   assert_failure
   assert_output --partial "カテゴリが見つかりません"
 }
@@ -164,7 +164,7 @@ TOML
   add_remote_to_repo "$DOTFILES_DIR" "$bare" "main"
   enable_remote_mode
 
-  run dotfile delete-category "../escape"
+  run dotfiles delete-category "../escape"
   assert_failure
   assert_output --partial "不正なカテゴリ名"
 }

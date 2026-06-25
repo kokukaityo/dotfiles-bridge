@@ -101,8 +101,8 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, first, "init", "-b", "develop")
-	runGit(t, first, "config", "user.name", "dotfile test")
-	runGit(t, first, "config", "user.email", "dotfile@example.invalid")
+	runGit(t, first, "config", "user.name", "dotfiles test")
+	runGit(t, first, "config", "user.email", "dotfiles@example.invalid")
 	runGit(t, first, "remote", "add", "origin", remote)
 	writeTestFile(t, filepath.Join(first, Setting.Path.InfraVersionFile), "1.0.0")
 	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "mode = \"remote\"\ndefault_branch = \"develop\"\nauto = [\"editor\"]\nignore = []\n")
@@ -124,8 +124,8 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 
 	second := filepath.Join(root, "second")
 	runGit(t, root, "clone", "--branch", "develop", remote, second)
-	runGit(t, second, "config", "user.name", "dotfile test")
-	runGit(t, second, "config", "user.email", "dotfile@example.invalid")
+	runGit(t, second, "config", "user.name", "dotfiles test")
+	runGit(t, second, "config", "user.email", "dotfiles@example.invalid")
 	writeTestFile(t, filepath.Join(second, "editor", "remote.txt"), "remote")
 	runGit(t, second, "add", "-A")
 	runGit(t, second, "commit", "-m", "remote update")
@@ -206,8 +206,8 @@ func newTestRepository(t *testing.T, branch string) string {
 	t.Helper()
 	dir := t.TempDir()
 	runGit(t, dir, "init", "-b", branch)
-	runGit(t, dir, "config", "user.name", "dotfile test")
-	runGit(t, dir, "config", "user.email", "dotfile@example.invalid")
+	runGit(t, dir, "config", "user.name", "dotfiles test")
+	runGit(t, dir, "config", "user.email", "dotfiles@example.invalid")
 	return dir
 }
 

@@ -1,4 +1,4 @@
-# dotfile
+# dotfiles
 
 複数マシン間で設定ファイルを同期する、Go製のdotfilesエンジン。
 
@@ -21,14 +21,14 @@
 make build
 ```
 
-生成されるバイナリは `dist/dotfile`。
+生成されるバイナリは `dist/dotfiles`。
 
 ## クイックスタート
 
 新しいデータリポジトリを作成する:
 
 ```bash
-dotfile init ~/dotfiles
+dotfiles init ~/dotfiles
 cd ~/dotfiles
 git remote add origin git@github.com:<user>/<repo>.git
 git push -u origin main
@@ -39,33 +39,33 @@ git push -u origin main
 ```bash
 git clone git@github.com:<user>/<repo>.git ~/dotfiles
 export DOTFILES_DIR="$HOME/dotfiles"
-dotfile install
+dotfiles install
 ```
 
 シェル起動時に同期する場合:
 
 ```bash
 export DOTFILES_DIR="$HOME/dotfiles"
-command -v dotfile >/dev/null && dotfile pull
-command -v dotfile >/dev/null && dotfile status
+command -v dotfiles >/dev/null && dotfiles pull
+command -v dotfiles >/dev/null && dotfiles status
 ```
 
-`dotfile install` を実行すると、ファイル監視サービスが OS のログイン時自動起動に登録される。以降は `dotfile push` を手動で叩く必要はない。手動で監視プロセスを起動する場合は `dotfile watch` を使う。
+`dotfiles install` を実行すると、ファイル監視サービスが OS のログイン時自動起動に登録される。以降は `dotfiles push` を手動で叩く必要はない。手動で監視プロセスを起動する場合は `dotfiles watch` を使う。
 
 ## コマンド
 
-| コマンド                         | 説明                                          |
-| -------------------------------- | --------------------------------------------- |
-| `dotfile init [path]`            | データリポジトリを作成。既定値は `~/dotfiles` |
-| `dotfile install`                | hooks、gitignore設定とsymlink配置             |
-| `dotfile link`                   | OSに応じたsymlinkを配置                       |
-| `dotfile pull`                   | リモートから同期                              |
-| `dotfile push`                   | autoカテゴリの変更をcommitしてpush            |
-| `dotfile watch`                  | ファイル変更を監視して自動push                |
-| `dotfile delete-category <name>` | カテゴリを設定とGit履歴から削除               |
-| `dotfile gitignore`              | `.gitignore` の自動生成部分を更新             |
-| `dotfile status`                 | コンフリクト退避状態を表示                    |
-| `dotfile version`                | バージョン情報を表示                          |
+| コマンド                           | 説明                                          |
+| ---------------------------------- | --------------------------------------------- |
+| `dotfiles init [path]`             | データリポジトリを作成。既定値は `~/dotfiles` |
+| `dotfiles install`                 | hooks、gitignore設定とsymlink配置             |
+| `dotfiles link`                    | OSに応じたsymlinkを配置                       |
+| `dotfiles pull`                    | リモートから同期                              |
+| `dotfiles push`                    | autoカテゴリの変更をcommitしてpush            |
+| `dotfiles watch`                   | ファイル変更を監視して自動push                |
+| `dotfiles delete-category <name>`  | カテゴリを設定とGit履歴から削除               |
+| `dotfiles gitignore`               | `.gitignore` の自動生成部分を更新             |
+| `dotfiles status`                  | コンフリクト退避状態を表示                    |
+| `dotfiles version`                 | バージョン情報を表示                          |
 
 データリポジトリは次の順で解決する。
 
@@ -98,7 +98,7 @@ ignore = ["backup", "raw"]
 
 - `mode`: `"local"`（デフォルト）または `"remote"`。local はコミットのみ、remote は origin との同期も行う
 - `default_branch`: pull、push、カテゴリ削除で使用するブランチ
-- `auto`: `dotfile push` の対象
+- `auto`: `dotfiles push` の対象
 - `ignore`: 自動生成される `.gitignore` に追加するカテゴリ
 - どちらにも属さないカテゴリは manual 扱い（Git で追跡するが自動 push しない）
 
@@ -127,7 +127,7 @@ WindowsのOSキーは `win32`。
 
 pull時にローカルとリモートが分岐していた場合、ローカル側を
 `conflict/<hostname>/<timestamp>` ブランチへ退避し、既定ブランチをリモートへ戻す。
-未解決状態では `.conflict-pending` が作成され、`dotfile status` が警告を表示する。
+未解決状態では `.conflict-pending` が作成され、`dotfiles status` が警告を表示する。
 
 ## ライセンス
 

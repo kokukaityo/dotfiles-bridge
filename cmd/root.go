@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"os"
 
-	engine "github.com/kokukaityo/dotfile/internal"
+	engine "github.com/kokukaityo/dotfiles-bridge/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func execute(templateFS fs.FS, hookFS fs.FS) error {
 
 func (a *application) rootCommand() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "dotfile",
+		Use:           "dotfiles",
 		Short:         "dotfiles同期エンジン",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -56,7 +56,7 @@ func (a *application) config() (*engine.Config, error) {
 		return nil, err
 	}
 	if config.VersionMismatch() {
-		_, _ = fmt.Fprintf(os.Stderr, "[dotfile] WARNING: バージョン不整合 (engine=%s, data=%s)\n", config.EngineVersion, config.DataVersion)
+		_, _ = fmt.Fprintf(os.Stderr, "[dotfiles] WARNING: バージョン不整合 (engine=%s, data=%s)\n", config.EngineVersion, config.DataVersion)
 	}
 	return config, nil
 }

@@ -156,12 +156,12 @@ func readManualGitignore(path string) (string, error) {
 }
 
 // Status は .conflict-pending マーカーの有無を確認し、未解決コンフリクトがあれば警告する。
-// シェル起動時に dotfile status を呼ぶ運用を想定した軽量チェック。
+// シェル起動時に dotfiles status を呼ぶ運用を想定した軽量チェック。
 func Status(config *Config, stdout io.Writer) error {
 	if _, err := os.Stat(RepositoryPath(config, conflictMarkerFile)); err == nil {
 		_, _ = fmt.Fprintln(stdout, "")
 		_, _ = fmt.Fprintln(stdout, "========================================")
-		_, _ = fmt.Fprintln(stdout, "  [dotfile] CONFLICT PENDING")
+		_, _ = fmt.Fprintln(stdout, "  [dotfiles] CONFLICT PENDING")
 		_, _ = fmt.Fprintf(stdout, "  Run: cd %s && git log --oneline --graph --all\n", config.DotfilesDir)
 		_, _ = fmt.Fprintln(stdout, "========================================")
 		_, _ = fmt.Fprintln(stdout, "")
@@ -310,7 +310,7 @@ func Push(config *Config, stdout, stderr io.Writer) error {
 		for _, category := range missing {
 			_, _ = fmt.Fprintf(stderr, "  - %s\n", category)
 		}
-		_, _ = fmt.Fprintln(stderr, "誤削除ならgit restore、恒久削除ならdotfile delete-categoryを使用してください。")
+		_, _ = fmt.Fprintln(stderr, "誤削除ならgit restore、恒久削除ならdotfiles delete-categoryを使用してください。")
 	}
 
 	for _, category := range autoPaths {

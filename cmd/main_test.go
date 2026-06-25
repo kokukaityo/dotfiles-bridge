@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	engine "github.com/kokukaityo/dotfile/internal"
+	engine "github.com/kokukaityo/dotfiles-bridge/internal"
 )
 
 func TestVersionCommandWithoutDataRepository(t *testing.T) {
@@ -21,7 +21,7 @@ func TestVersionCommandWithoutDataRepository(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stdout.String(), "dotfile engine v1.2.3") {
+	if !strings.Contains(stdout.String(), "dotfiles engine v1.2.3") {
 		t.Fatalf("unexpected output: %s", stdout.String())
 	}
 }

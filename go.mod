@@ -1,4 +1,4 @@
-module github.com/kokukaityo/dotfile
+module github.com/kokukaityo/dotfiles-bridge
 
 go 1.26.4
 

@@ -3,7 +3,7 @@
 GOEXE := $(shell go env GOEXE)
 
 build:
-	go build -o dist/dotfile$(GOEXE) ./cmd
+	go build -o dist/dotfiles$(GOEXE) ./cmd
 
 lint:
 	golangci-lint run ./...
