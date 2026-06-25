@@ -14,7 +14,7 @@ export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
 ### 2. 初期設定
 
 ```bash
-dotfiles setup
+dotfiles install
 ```
 
 ### 3. シェル起動時の自動同期（任意）
@@ -36,15 +36,15 @@ command -v dotfiles >/dev/null && dotfiles status
 
 ## 構成
 
-| ディレクトリ | 用途 |
-|---|---|
-| `ai-agent/` | AI エージェント設定 |
-| `editor/` | エディタ設定 |
-| `shell/` | シェル設定 |
+| ディレクトリ | 用途                |
+| ------------ | ------------------- |
+| `ai-agent/`  | AI エージェント設定 |
+| `editor/`    | エディタ設定        |
+| `shell/`     | シェル設定          |
 
-| ファイル | 用途 |
-|---|---|
-| `sync.conf` | 同期モード定義 |
+| ファイル         | 用途                   |
+| ---------------- | ---------------------- |
+| `sync.conf`      | 同期モード定義         |
 | `.infra-version` | 互換エンジンバージョン |
 
 詳細は [dotfiles エンジン](https://github.com/kokukaityo/dotfile) を参照。

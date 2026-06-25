@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# post-merge — git pull / merge の後に走る。
+# symlink を張り直して、新しい設定ファイルを取りこぼさない。
+set -euo pipefail
+
+if command -v dotfile >/dev/null 2>&1; then
+    if dotfile link >/dev/null 2>&1; then
+        echo "[post-merge] symlink refreshed."
+    else
+        echo "[post-merge] dotfile link failed; run 'dotfile link' manually."
+    fi
+else
+    echo "[post-merge] dotfile command not found; run 'dotfile link' manually."
+fi

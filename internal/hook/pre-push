@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# pre-push — push直前のガード。正本を汚さないための安全弁。
+# 1) コンフリクトマーカーが残っているファイルがあれば中止
+# 2) シークレットらしき内容（鍵・トークン）が含まれていれば中止
+set -euo pipefail
+
+DOTFILES="$(git rev-parse --show-toplevel)"
+cd "$DOTFILES"
+
+fail() { echo "[pre-push] BLOCKED: $1"; exit 1; }
+
+# 1) 未解決コンフリクトマーカー検知
+if git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- . >/dev/null 2>&1; then
+  git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- .
+  fail "未解決のコンフリクトマーカーが残っています。解決してから push してください。"
+fi
+
+# 2) シークレット混入の簡易検知（誤爆時は環境変数 SKIP_SECRET_SCAN=1 で回避）
+#    push対象のコミット差分だけをスキャンする（既存リモートの内容は無視）。
+if [ "${SKIP_SECRET_SCAN:-0}" != "1" ]; then
+  SECRET_PAT='(api[_-]?key|secret|password|token|BEGIN (RSA|OPENSSH) PRIVATE KEY)\s*[:=]'
+  EXCLUDE_PAT='(example|placeholder|<your|\$\{)'
+
+  # stdinからpush対象のref情報を読む（形式: local_ref local_sha remote_ref remote_sha）
+  diff_range=""
+  while read -r _ local_sha _ remote_sha; do
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+      continue  # ブランチ削除
+    fi
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+      # 新規ブランチ — mainとの差分を見る
+      diff_range="origin/$(git config --get init.defaultBranch 2>/dev/null || echo main)..${local_sha}"
+    else
+      diff_range="${remote_sha}..${local_sha}"
+    fi
+  done
+
+  if [ -n "$diff_range" ]; then
+    if git diff "$diff_range" -U0 \
+        | grep -Ei "$SECRET_PAT" \
+        | grep -vE "$EXCLUDE_PAT" >/dev/null 2>&1; then
+      echo "[pre-push] push対象の差分にシークレットらしき記述を検出："
+      git diff "$diff_range" -U0 \
+        | grep -nEi "$SECRET_PAT" \
+        | grep -vE "$EXCLUDE_PAT" || true
+      fail "実値の鍵/トークンが含まれていないか確認してください（誤検知なら SKIP_SECRET_SCAN=1 git push）。"
+    fi
+  fi
+fi
+
+echo "[pre-push] checks passed."

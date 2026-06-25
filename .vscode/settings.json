@@ -1,3 +1,52 @@
 {
-    "window.title": "dotfiles : ${folderName}${separator}${dirty}${activeEditorShort}"
+    "window.title": "dotfiles : ${folderName}${separator}${dirty}${activeEditorShort}",
+    "editor.formatOnSave": true,
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+
+    // Go
+    "go.lintTool": "golangci-lint",
+    "go.lintOnSave": "workspace",
+    "gopls": {
+        "formatting.gofumpt": true
+    },
+    "[go]": {
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        }
+    },
+    // Shell (既存 Bash コード用)
+    "[shellscript]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    // JSON
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    // YAML
+    "[yaml]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    // Markdown
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Terminal — bare repo + worktree 環境の暫定対応 (issue #3)
+    "terminal.integrated.env.windows": {
+        "GOFLAGS": "-buildvcs=false"
+    },
+
+    // Explorer
+    "files.watcherExclude": {
+        "dist/**": true
+    },
+
+    // Spell checker
+    "cSpell.words": ["dotfile", "gofmt", "gofumpt", "golangci", "symlink"]
 }

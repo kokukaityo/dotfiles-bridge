@@ -1,0 +1,22 @@
+[path]
+default_dir = "dotfiles"
+template_dir = "template"
+hook_dir = ".dotfile-hook"
+backup_dir = ".backup"
+infra_version_file = ".infra-version"
+sync_config_file = "sync.toml"
+link_config_file = "link.toml"
+conflict_marker_file = ".conflict-pending"
+
+[git]
+hooks_path = "core.hooksPath"
+symlinks = "core.symlinks"
+gitattributes_line = "* -text"
+
+[hook]
+sources = ["internal/hook/pre-push", "internal/hook/post-merge"]
+
+[gitignore]
+marker_start = "# --- auto-generated from sync.toml (do not edit below) ---"
+marker_end = "# --- end auto-generated ---"
+security_patterns = ["*auth*", "*.key", "*.pem", ".env*"]

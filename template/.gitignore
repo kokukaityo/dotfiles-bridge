@@ -1,4 +1,4 @@
-# --- auto-generated from conf.sh (do not edit below) ---
+# --- auto-generated from sync.toml (do not edit below) ---
 
 # Security exclusions
 *auth*
@@ -6,9 +6,10 @@
 *.pem
 .env*
 
-# Ignored categories (SYNC_IGNORE in conf.sh)
+# Ignored categories (ignore in sync.toml)
 backup/
 raw/
 
 .conflict-pending
+.dotfile-hook/
 # --- end auto-generated ---

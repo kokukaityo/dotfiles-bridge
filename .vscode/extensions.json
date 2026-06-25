@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "golang.go",
+        "huyang.go-doc-comments",
+        "foxundermoon.shell-format",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker"
+    ]
+}

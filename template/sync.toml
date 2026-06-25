@@ -1,0 +1,4 @@
+mode = "local"
+default_branch = "main"
+auto = ["ai-agent", "editor", "shell"]
+ignore = ["backup", "raw"]
