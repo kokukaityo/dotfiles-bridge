@@ -18,7 +18,6 @@ teardown() {
   run dotfiles version
   assert_success
   assert_output --partial "data:"
-  assert_output --partial "data version:"
 }
 
 @test "version: データリポジトリがなければ本体情報のみ" {

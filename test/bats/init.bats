@@ -17,11 +17,7 @@ teardown() {
   assert_output --partial "作成が完了"
 
   assert_file_exists "$TARGET/sync.toml"
-  assert_file_exists "$TARGET/.infra-version"
   assert_file_exists "$TARGET/.gitignore"
-
-  run cat "$TARGET/.infra-version"
-  assert_output --partial "1.0.0"
 
   assert_file_exists "$TARGET/ai-agent/link.toml"
   assert_file_exists "$TARGET/editor/link.toml"

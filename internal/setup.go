@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const hookFileMode fs.FileMode = 0o755
@@ -44,8 +45,15 @@ func InitializeRepository(target string, templateFS fs.FS, hookFS fs.FS, stdout 
 	if err := extractTemplate(templateFS, target); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(target, infraVersionFile), []byte(EngineVersion+"\n"), 0o644); err != nil {
-		return fmt.Errorf("バージョンファイルを書き出せません: %w", err)
+
+	syncPath := filepath.Join(target, syncConfigFile)
+	sc, err := loadSyncConfig(syncPath)
+	if err != nil {
+		return fmt.Errorf("%sを読み込めません: %w", syncConfigFile, err)
+	}
+	sc.Version = strings.TrimSpace(EngineVersion)
+	if err := writeSyncConfig(syncPath, sc); err != nil {
+		return fmt.Errorf("%sを書き出せません: %w", syncConfigFile, err)
 	}
 
 	config, err := loadConfig(target)

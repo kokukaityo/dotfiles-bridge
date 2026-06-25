@@ -103,8 +103,6 @@ create_data_repo() {
   git -C "$repo" config user.name "bats-test"
   git -C "$repo" config user.email "bats@test.invalid"
 
-  echo "1.0.0" > "$repo/.infra-version"
-
   cat > "$repo/sync.toml" <<TOML
 default_branch = "$branch"
 mode = "local"
