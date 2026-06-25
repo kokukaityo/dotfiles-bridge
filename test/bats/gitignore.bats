@@ -29,6 +29,6 @@ EOF
   assert_file_contains "$DOTFILES_DIR/.gitignore" "backup/"
   assert_file_contains "$DOTFILES_DIR/.gitignore" "*auth*"
   assert_file_contains "$DOTFILES_DIR/.gitignore" ".env*"
-  assert_file_contains "$DOTFILES_DIR/.gitignore" ".conflict-pending"
+  ! grep -qF ".conflict-pending" "$DOTFILES_DIR/.gitignore" || fail "expected .gitignore not to contain .conflict-pending"
   assert_file_contains "$DOTFILES_DIR/.gitignore" ".dotfiles-hook/"
 }
