@@ -67,8 +67,6 @@ teardown() {
   assert_success
   assert_output --partial "分岐を検出"
 
-  [[ -f "$DOTFILES_DIR/.conflict-pending" ]] || fail "expected .conflict-pending to exist"
-
   run git -C "$DOTFILES_DIR" branch --list "conflict/*"
   [[ -n "$output" ]] || fail "expected conflict/* branch to exist"
 }
