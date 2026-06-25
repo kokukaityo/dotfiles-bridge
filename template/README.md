@@ -105,4 +105,55 @@ ignore = ["vscode"]
 
 `dotfiles link` や `dotfiles install` を実行すると、symlink 先に既存のファイルがある場合は `.backup/<category>_<timestamp>/` に自動退避されます。既に同じリンクが張られている場合はスキップされます。
 
+## カテゴリの追加方法
+
+新しいカテゴリを追加する手順です。
+
+1. データリポジトリにカテゴリディレクトリを作成します
+
+    ```bash
+    mkdir ~/dotfiles/git
+    ```
+
+2. `link.toml` を作成し、symlink の配置先を定義します
+
+    ```toml
+    [darwin]
+    ".gitconfig" = ["~/.gitconfig"]
+
+    [linux]
+    ".gitconfig" = ["~/.gitconfig"]
+
+    [win32]
+    ".gitconfig" = ["~/.gitconfig"]
+    ```
+
+3. 管理したい設定ファイルをカテゴリディレクトリに配置します
+
+    `dotfiles link` は配置先に既存ファイルがある場合、自動的にバックアップしてからカテゴリディレクトリへ移動します。そのため、手動でコピーする必要はありません。既存ファイルがない場合のみ、新規作成してください。
+
+4. 用途に応じて `sync.toml` にカテゴリを登録します
+
+    | 登録先 | 用途 |
+    |--------|------|
+    | `auto` | `dotfiles push` / `watch` で自動的にリモートへ同期する |
+    | `manual`（未登録） | symlink は使うがリモート同期は手動で行う。`auto` にも `ignore` にも書かなければこの扱いになる |
+    | `ignore` | symlink のみ使い、Git 追跡から完全に除外する |
+
+    ```toml
+    # auto に追加する場合
+    auto = ["ai-agent", "shell", "git"]
+
+    # ignore に追加する場合（link 機能だけ使い、Git で追跡しない）
+    ignore = ["git"]
+    ```
+
+5. symlink を配置します
+
+    ```bash
+    dotfiles link
+    ```
+
+これで `~/.gitconfig` は `~/dotfiles/git/.gitconfig` への symlink になり、どちらから編集しても同じファイルが更新されます。
+
 詳細は [dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) を参照。
