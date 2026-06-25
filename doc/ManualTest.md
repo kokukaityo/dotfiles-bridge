@@ -64,7 +64,7 @@ make exe-init ~/dotfiles-test
 
 - [ ] `~/dotfiles-test/` が作成される
 - [ ] `sync.toml` が存在し、`version`, `mode`, `default_branch`, `auto`, `ignore` が設定されている
-- [ ] `ai-agent/link.toml`, `editor/link.toml`, `shell/link.toml` が存在
+- [ ] `ai-agent/link.toml`, `vscode/link.toml`, `shell/link.toml` が存在
 - [ ] `.dotfiles-hook/pre-push`, `.dotfiles-hook/post-merge` が存在
 - [ ] `.gitattributes` に `* -text` が書かれている
 - [ ] `.gitignore` にマーカー行と自動生成セクションがある

@@ -18,7 +18,7 @@
     └── (設定ファイル群)
 ```
 
-カテゴリは用途ごとに自由に作れます（例: `shell/`, `editor/`, `ai-agent/` など）。
+カテゴリは用途ごとに自由に作れます（例: `shell/`, `vscode/`, `ai-agent/` など）。
 カテゴリ名には英数字・`_`・`.`・`-` が使え、先頭は英数字または `_` にしてください。
 
 ## sync.toml
@@ -28,9 +28,11 @@
 ```toml
 mode = "local"
 default_branch = "main"
-auto = ["editor", "shell"]
-ignore = ["backup"]
+auto = ["ai-agent", "shell"]
+ignore = ["backup", "raw", "vscode"]
 ```
+
+> `vscode` カテゴリは VS Code に標準の Settings Sync 機能があるため、デフォルトでは `ignore`（Git 追跡外）です。dotfiles-bridge で Git 管理したい場合は `ignore` から外して `auto` に移動してください。
 
 ### キー
 

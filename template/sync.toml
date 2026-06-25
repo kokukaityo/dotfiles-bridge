@@ -1,4 +1,4 @@
 mode = "local"
 default_branch = "main"
-auto = ["ai-agent", "editor", "shell"]
-ignore = ["backup", "raw"]
+auto = ["ai-agent", "shell"]
+ignore = ["backup", "raw", "vscode"]

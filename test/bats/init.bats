@@ -20,7 +20,7 @@ teardown() {
   assert_file_exists "$TARGET/.gitignore"
 
   assert_file_exists "$TARGET/ai-agent/link.toml"
-  assert_file_exists "$TARGET/editor/link.toml"
+  assert_file_exists "$TARGET/vscode/link.toml"
   assert_file_exists "$TARGET/shell/link.toml"
 
   run git -C "$TARGET" log --oneline

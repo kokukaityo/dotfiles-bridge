@@ -1,7 +1,0 @@
-# editor/link.toml — エディタ設定のsymlink定義
-#
-# [darwin]
-# "settings.json" = ["~/Library/Application Support/Code/User/settings.json"]
-#
-# [linux]
-# "settings.json" = ["~/.config/Code/User/settings.json"]
