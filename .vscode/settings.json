@@ -1,5 +1,5 @@
 {
-    "window.title": "dotfiles : ${folderName}${separator}${dirty}${activeEditorShort}",
+    "window.title": "dotfiles-bridge : ${folderName}${separator}${dirty}${activeEditorShort}",
     "editor.formatOnSave": true,
     "files.eol": "\n",
     "files.insertFinalNewline": true,
@@ -48,5 +48,5 @@
     },
 
     // Spell checker
-    "cSpell.words": ["dotfiles", "gofmt", "gofumpt", "golangci", "symlink"]
+    "cSpell.words": ["dotfiles", "dotfiles-bridge", "gofmt", "gofumpt", "golangci", "symlink"]
 }
