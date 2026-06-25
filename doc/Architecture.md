@@ -2,10 +2,10 @@
 
 ## 全体構成
 
-`dotfiles` はGoのシングルバイナリとして動作し、ユーザー固有データは別のGitリポジトリで管理する。
+`dotfiles-bridge` は `dotfiles` コマンドとして動作するGoのシングルバイナリで、ユーザー固有データは別のGitリポジトリで管理する。
 
 ```text
-dotfiles engine
+dotfiles-bridge engine
 ├── cmd/
 │   ├── main.go          エントリポイントと終了コード
 │   ├── root.go          Cobraルートコマンド、application struct

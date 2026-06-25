@@ -1,14 +1,14 @@
 # My Dotfiles
 
-[dotfiles](https://github.com/kokukaityo/dotfiles-bridge) エンジンで管理する個人設定リポジトリ。
+[dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) エンジンで管理する個人設定リポジトリ。
 
 ## セットアップ
 
 ### 1. エンジンをインストール
 
 ```bash
-git clone https://github.com/kokukaityo/dotfiles-bridge.git ~/.local/share/dotfiles
-export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
+git clone https://github.com/kokukaityo/dotfiles-bridge.git ~/.local/share/dotfiles-bridge
+export PATH="$HOME/.local/share/dotfiles-bridge/bin:$PATH"
 ```
 
 ### 2. 初期設定
@@ -23,7 +23,7 @@ dotfiles install
 
 ```bash
 export DOTFILES_DIR="$HOME/dotfiles"
-export PATH="$HOME/.local/share/dotfiles/bin:$PATH"
+export PATH="$HOME/.local/share/dotfiles-bridge/bin:$PATH"
 command -v dotfiles >/dev/null && dotfiles pull
 command -v dotfiles >/dev/null && dotfiles status
 ```
@@ -47,4 +47,4 @@ command -v dotfiles >/dev/null && dotfiles status
 | `sync.conf`      | 同期モード定義         |
 | `.infra-version` | 互換エンジンバージョン |
 
-詳細は [dotfiles エンジン](https://github.com/kokukaityo/dotfiles-bridge) を参照。
+詳細は [dotfiles-bridge](https://github.com/kokukaityo/dotfiles-bridge) を参照。

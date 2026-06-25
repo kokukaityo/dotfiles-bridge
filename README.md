@@ -1,6 +1,7 @@
-# dotfiles
+# dotfiles-bridge
 
-複数マシン間で設定ファイルを同期する、Go製のdotfilesエンジン。
+複数マシン間で設定ファイルを同期する、Go製のdotfiles-bridgeエンジン。
+CLI コマンド名は `dotfiles`。
 
 - カテゴリ単位の同期モード管理
 - Windows / macOS / Linux別のsymlink配置

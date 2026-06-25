@@ -1,4 +1,4 @@
-# dotfiles エンジン 手動動作確認手順書
+# dotfiles-bridge 手動動作確認手順書
 
 ## Context
 
