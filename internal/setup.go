@@ -104,9 +104,6 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 	if !git.Success("rev-parse", "--git-dir") {
 		return fmt.Errorf("gitリポジトリではありません: %s", config.DotfilesDir)
 	}
-	if err := migrateHookDir(config.DotfilesDir, stdout); err != nil {
-		return err
-	}
 	if err := installHooks(config.DotfilesDir, hookFS); err != nil {
 		return err
 	}
@@ -126,29 +123,6 @@ func SetupRepository(config *Config, hookFS fs.FS, stdout io.Writer) error {
 		_, _ = fmt.Fprintf(stdout, "[dotfiles] WARNING: watchサービスの登録に失敗しました: %v\n", err)
 	}
 	_, _ = fmt.Fprintln(stdout, "[dotfiles] Setup complete.")
-	return nil
-}
-
-const legacyHookDir = ".dotfile-hook"
-
-func migrateHookDir(dotfilesDir string, stdout io.Writer) error {
-	oldDir := filepath.Join(dotfilesDir, legacyHookDir)
-	newDir := filepath.Join(dotfilesDir, hookDir)
-	info, err := os.Stat(oldDir)
-	if err != nil || !info.IsDir() {
-		return nil
-	}
-	if _, err := os.Stat(newDir); err == nil {
-		if err := os.RemoveAll(oldDir); err != nil {
-			return fmt.Errorf("旧hookディレクトリを削除できません: %w", err)
-		}
-		_, _ = fmt.Fprintf(stdout, "[dotfiles] 旧hookディレクトリを削除しました: %s\n", legacyHookDir)
-		return nil
-	}
-	if err := os.Rename(oldDir, newDir); err != nil {
-		return fmt.Errorf("hookディレクトリをリネームできません (%s → %s): %w", legacyHookDir, hookDir, err)
-	}
-	_, _ = fmt.Fprintf(stdout, "[dotfiles] hookディレクトリをリネームしました: %s → %s\n", legacyHookDir, hookDir)
 	return nil
 }
 
