@@ -104,14 +104,12 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 	runGit(t, first, "config", "user.name", "dotfiles test")
 	runGit(t, first, "config", "user.email", "dotfiles@example.invalid")
 	runGit(t, first, "remote", "add", "origin", remote)
-	writeTestFile(t, filepath.Join(first, Setting.Path.InfraVersionFile), "1.0.0")
 	writeTestFile(t, filepath.Join(first, Setting.Path.SyncConfigFile), "mode = \"remote\"\ndefault_branch = \"develop\"\nauto = [\"editor\"]\nignore = []\n")
 	writeTestFile(t, filepath.Join(first, "editor", "settings.json"), "one")
 	runGit(t, first, "add", "-A")
 	runGit(t, first, "commit", "-m", "initial")
 	runGit(t, first, "push", "-u", "origin", "develop")
 
-	EngineVersion = "1.0.0"
 	config, err := loadConfig(first)
 	if err != nil {
 		t.Fatal(err)
@@ -159,13 +157,11 @@ func TestPushPullAndDeleteCategory(t *testing.T) {
 
 func TestPushLocalModeSkipsPush(t *testing.T) {
 	dir := newTestRepository(t, "main")
-	writeTestFile(t, filepath.Join(dir, Setting.Path.InfraVersionFile), "1.0.0")
 	writeTestFile(t, filepath.Join(dir, Setting.Path.SyncConfigFile), "default_branch = \"main\"\nauto = [\"editor\"]\n")
 	writeTestFile(t, filepath.Join(dir, "editor", "file.txt"), "hello")
 	runGit(t, dir, "add", "-A")
 	runGit(t, dir, "commit", "-m", "initial")
 
-	EngineVersion = "1.0.0"
 	config, err := loadConfig(dir)
 	if err != nil {
 		t.Fatal(err)

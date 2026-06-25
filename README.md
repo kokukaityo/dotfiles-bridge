@@ -71,14 +71,13 @@ command -v dotfiles >/dev/null && dotfiles status
 データリポジトリは次の順で解決する。
 
 1. `DOTFILES_DIR`
-2. 現在のGitルート（`.infra-version` がある場合）
+2. 現在のGitルート（`sync.toml` がある場合）
 3. `~/dotfiles`
 
 ## データリポジトリ
 
 ```text
 ~/dotfiles/
-├── .infra-version
 ├── sync.toml
 ├── ai-agent/
 │   └── link.toml

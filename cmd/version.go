@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// versionCommand は本体とデータリポジトリのバージョンを表示する。
+// versionCommand は本体とデータリポジトリの情報を表示する。
 // Resolve のエラーは握り潰す。データリポジトリがなくても本体バージョンだけは表示したいため。
 func (a *application) versionCommand() *cobra.Command {
 	return &cobra.Command{
@@ -20,11 +20,7 @@ func (a *application) versionCommand() *cobra.Command {
 			if err != nil {
 				return nil
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  data:         %s\n", config.DotfilesDir)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  data version: %s\n", config.DataVersion)
-			if config.VersionMismatch() {
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "[dotfiles] WARNING: 本体とデータのメジャーバージョンが異なります\n")
-			}
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  data: %s\n", config.DotfilesDir)
 			return nil
 		},
 	}
