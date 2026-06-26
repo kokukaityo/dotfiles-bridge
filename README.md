@@ -58,21 +58,9 @@ chezmoi はテンプレートエンジンやシークレット暗号化など、
 
 ## セキュリティ
 
-dotfiles に API キーやトークンが混入するリスクに対し、3層の防御を備えています。
+dotfiles への API キーやトークンの混入を防ぐため、`.gitignore` 自動生成・pre-push シークレットスキャン・ignore カテゴリの 3 層で防御しています。`mode = "local"`（デフォルト）ではデータは一切外部に送信されません。
 
-1. **`.gitignore` 自動生成**: `dotfiles gitignore` で `*auth*`, `*.key`, `*.pem`, `.env*` 等を自動的に除外します
-2. **pre-push hook のシークレットスキャン**: push 前に差分をスキャンし、`api_key`, `secret`, `password`, `token`, 秘密鍵ヘッダーなどのパターンを検出した場合は push をブロックします
-3. **ignore カテゴリ**: `sync.toml` の `ignore` に登録したカテゴリは Git 追跡から完全に除外されます
-
-加えて、`sync.toml` の `auto` に登録していないカテゴリは `dotfiles push` や `watch` による自動 push の対象外です（`manual` 扱い）。新しいカテゴリを追加しても、明示的に `auto` へ登録しない限りリモートへ自動送信されないため、意図しない流出に対するフェイルセーフになっています。
-
-誤検知で push がブロックされた場合は `SKIP_SECRET_SCAN=1 git push` で回避できます。
-
-また、`mode = "local"`（デフォルト）であればデータは一切外部に送信されません。ローカルの Git コミットのみで動作するため、リモートリポジトリなしで完結できます。
-
-リモート同期を使う場合は、リポジトリを **private** に設定することを推奨します。
-
-技術的な詳細は [doc/Architecture.md](doc/Architecture.md) を参照してください。
+詳細は [SECURITY.md](SECURITY.md) を参照してください。脆弱性の報告もそちらに案内があります。
 
 ## インストール
 
