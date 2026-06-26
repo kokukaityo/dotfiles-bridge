@@ -28,6 +28,8 @@
 - CI・E2E テスト・installer の堅牢化は今後対応予定です。
 - Windows で symlink を作成するには開発者モードの有効化が必要です（設定 → システム → 開発者向け）。
 
+既知の不具合や今後の改善予定は [Issues](https://github.com/kokukaityo/dotfiles-bridge/issues) を参照してください。
+
 ## ユースケース
 
 - **AI エージェント設定**: AGENTS.md・スキル・コマンドを Claude Code と Codex に同時配置。育てた設定がどの端末でもすぐ使えます
