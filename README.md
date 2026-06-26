@@ -3,26 +3,21 @@
 > **Alpha 版です。** 実データへの適用前にバックアップを取ることを推奨します。
 > フィードバックや不具合報告は [Issues](https://github.com/kokukaityo/dotfiles-bridge/issues) へお願いします。
 
-本来アプリごとに閉じている設定ファイルを、アプリ間・マシン間で安全に橋渡しする Go 製の dotfiles 管理ツールです。
+設定ファイル（エージェントのルール、エディタの設定、シェルの dotfiles）はアプリごとに閉じて持っています。
+そのため、こんな場面に出くわします。
 
-CLI コマンド名は `dotfiles` です。
-
-## dotfiles-bridge とは
-
-開発環境の設定ファイル — AI エージェントのルール、エディタの設定、シェルの dotfiles — はそれぞれのアプリがローカルに閉じて持っています。そのため、こんな場面に出くわします。
-
-- 新しい PC を買ったとき、設定を一から作り直す
-- Claude Code の AGENTS.md を育てたが、別のマシンでは使えない
+- 新しい PC を買ったとき、設定を一から作り直す or 古い PC からコピーしてくる
+- Claude Code の CLAUDE.md を育てたが、別のマシンでは使えない
 - 同じ settings.json を VS Code と Cursor の両方に置きたいが、手動コピーが面倒
 
-dotfiles-bridge はこれらの設定ファイルを1箇所に集約し、symlink で各アプリに配置します。設定ファイルは本来それぞれのアプリに閉じているもので、それを「橋渡し」するのが dotfiles-bridge の役割です。
+`dotfiles-bridge` はこれらを1箇所に集約し、symlink で各アプリに橋渡しします。単なる同期ツールではなく、外部に一切送信しない単一端末内のアプリ間共有も、複数端末間の設定同期も、同じ仕組みで対応できます。
 
-### 特徴
+## 特徴
 
-- **一元管理** — 散らばった設定ファイルを `~/dotfiles` に集約します
+- **一元管理** — 散らばった設定ファイルを任意のフォルダ（デフォルトは `~/dotfiles`）に集約します
 - **OS 別配置** — symlink でアプリが期待するパスに自動配置します（Windows / macOS / Linux）。symlink なので編集が即座に反映されます
 - **バージョン管理** — Git による自動 commit・push・pull で変更履歴を追跡できます。分岐時はローカル変更を安全に退避します
-- **スコープの柔軟性** — 1台の PC 内のアプリ間共有も、複数マシン間の同期も、同じ仕組みで対応します
+- **スコープの柔軟性** — 外部に一切送信しない単一端末内のアプリ間共有も、複数端末間の設定同期も、設定ファイルで柔軟に切り替えられます
 
 ## 既知の制約
 
@@ -46,16 +41,16 @@ dotfiles-bridge はこれらの設定ファイルを1箇所に集約し、symlin
 
 dotfiles 管理ツールは複数あります。dotfiles-bridge は「symlink ベースのシンプルなアプローチ」を重視した設計です。
 
-| | dotfiles-bridge | [chezmoi](https://www.chezmoi.io/) | [GNU Stow](https://www.gnu.org/software/stow/) | bare git repo |
-|---|---|---|---|---|
-| **アプローチ** | symlink | テンプレート展開（コピー） | symlink | Git 直接操作 |
-| **OS 別配置** | link.toml で定義 | テンプレート内の分岐 | ディレクトリ構造で暗黙的 | 手動 |
-| **Git 統合** | 自動 commit・push・pull | 自動 commit・push・pull | なし（別途管理） | 手動 |
-| **テンプレート機能** | なし | あり（Go template） | なし | なし |
-| **シークレット管理** | pre-push hook で検出・ブロック | 暗号化して同期可能 | なし | なし |
-| **ファイル監視** | あり（自動 push） | なし | なし | なし |
-| **学習コスト** | 低（設定ファイルをそのまま置く） | 中（テンプレート構文の習得） | 低 | 低〜中 |
-| **設定の即時反映** | あり（symlink） | なし（`chezmoi apply` が必要） | あり（symlink） | 手動 |
+|                      | dotfiles-bridge                  | [chezmoi](https://www.chezmoi.io/) | [GNU Stow](https://www.gnu.org/software/stow/) | bare git repo |
+| -------------------- | -------------------------------- | ---------------------------------- | ---------------------------------------------- | ------------- |
+| **アプローチ**       | symlink                          | テンプレート展開（コピー）         | symlink                                        | Git 直接操作  |
+| **OS 別配置**        | link.toml で定義                 | テンプレート内の分岐               | ディレクトリ構造で暗黙的                       | 手動          |
+| **Git 統合**         | 自動 commit・push・pull          | 自動 commit・push・pull            | なし（別途管理）                               | 手動          |
+| **テンプレート機能** | なし                             | あり（Go template）                | なし                                           | なし          |
+| **シークレット管理** | pre-push hook で検出・ブロック   | 暗号化して同期可能                 | なし                                           | なし          |
+| **ファイル監視**     | あり（自動 push）                | なし                               | なし                                           | なし          |
+| **学習コスト**       | 低（設定ファイルをそのまま置く） | 中（テンプレート構文の習得）       | 低                                             | 低〜中        |
+| **設定の即時反映**   | あり（symlink）                  | なし（`chezmoi apply` が必要）     | あり（symlink）                                | 手動          |
 
 chezmoi はテンプレートエンジンやシークレット暗号化など、機能面では最も豊富です。dotfiles-bridge はテンプレート機能を持たない代わりに、設定ファイルをそのまま置けるシンプルさと、symlink による即時反映を重視しています。
 
@@ -162,18 +157,18 @@ PC-A で設定を編集
 
 ## コマンド
 
-| コマンド                          | 説明                                       |
-| --------------------------------- | ------------------------------------------ |
-| `dotfiles init [path]`            | データリポジトリを作成（既定: `~/dotfiles`）|
-| `dotfiles install`                | hooks・gitignore 設定と symlink 配置       |
-| `dotfiles link`                   | OS に応じた symlink を配置                 |
-| `dotfiles pull`                   | リモートから同期                           |
-| `dotfiles push`                   | auto カテゴリの変更を commit して push     |
-| `dotfiles watch`                  | ファイル変更を監視して自動 push            |
-| `dotfiles delete-category <name>` | カテゴリを設定と Git 履歴から削除          |
-| `dotfiles gitignore`              | `.gitignore` の自動生成部分を更新          |
-| `dotfiles status`                 | コンフリクト退避状態を表示                 |
-| `dotfiles version`                | バージョン情報を表示                       |
+| コマンド                          | 説明                                         |
+| --------------------------------- | -------------------------------------------- |
+| `dotfiles init [path]`            | データリポジトリを作成（既定: `~/dotfiles`） |
+| `dotfiles install`                | hooks・gitignore 設定と symlink 配置         |
+| `dotfiles link`                   | OS に応じた symlink を配置                   |
+| `dotfiles pull`                   | リモートから同期                             |
+| `dotfiles push`                   | auto カテゴリの変更を commit して push       |
+| `dotfiles watch`                  | ファイル変更を監視して自動 push              |
+| `dotfiles delete-category <name>` | カテゴリを設定と Git 履歴から削除            |
+| `dotfiles gitignore`              | `.gitignore` の自動生成部分を更新            |
+| `dotfiles status`                 | コンフリクト退避状態を表示                   |
+| `dotfiles version`                | バージョン情報を表示                         |
 
 データリポジトリは次の順で解決されます:
 
